@@ -1,0 +1,39 @@
+{
+ "meta": {
+  "family": "jepa",
+  "task": "cartpole-swingup",
+  "run": "seed0",
+  "seed": 0,
+  "width": 1.0,
+  "data_frac": 1.0,
+  "step": 60000,
+  "size": null,
+  "arch": "hist3"
+ },
+ "n": 64,
+ "n_cal": 256,
+ "p": 8,
+ "K": 16,
+ "pop": 512,
+ "iters": 6,
+ "H": 32,
+ "gpu": "NVIDIA L40S",
+ "by_d": {
+  "2": {
+   "anchor_err": 2.60180071986305,
+   "stale_err": 236.91359428827224,
+   "anchor_err_frac_in_top_p": 0.14344197448093826,
+   "cal_var_frac_top_p": 0.34371647291086443,
+   "plan_err_pred": 0.054862646199419794,
+   "plan_err_noise": 0.02499544171992,
+   "regret_pred": 0.450579272583127,
+   "regret_noise": -0.029276151210069656,
+   "regret_naive": 0.5760411601513624,
+   "regret_rand_dir": 0.13667143695056438,
+   "regret_shuffled_err": 0.18685365095734596,
+   "regret_half_err": 0.1815789844840765,
+   "regret_hedge_K4": 0.2537244688719511,
+   "regret_hedge_K16": 0.3157939724624157
+  }
+ }
+}

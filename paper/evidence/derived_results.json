@@ -1,0 +1,118 @@
+{
+  "source_commit": "ee9cc0d0bd5362e0a0c563a1b63da7c02d86927a",
+  "source_sha256": "07ac327c13d9e8bbf78579dc4f8625529908e2231c69868cbcf7516faf044132",
+  "n_configs": 6,
+  "n_tasks": 3,
+  "episodes_per_cell": 5,
+  "n_episodes": 90,
+  "selected_config": [
+    2,
+    8
+  ],
+  "speedup": 3.4100258338452725,
+  "cost_reduction_percent": 70.67470896921732,
+  "total_observed_pilot_gpu_hours": 75.58503512495093,
+  "rows": [
+    {
+      "sampler_steps": 8,
+      "replan_decisions": 4,
+      "score": 0.13717981096964674,
+      "planning_seconds_per_agent_decision": 10.438445514774322,
+      "total_seconds_per_agent_decision": 10.503374618784585,
+      "mean_batch_planning_call_seconds": 208.76891029548642,
+      "planning_hours_observed_5_episodes": 7.248920496371056,
+      "cartpole-swingup": 0.3337596369670579,
+      "walker-walk": 0.037175044322011984,
+      "cup-catch": 0.040604751619870406
+    },
+    {
+      "sampler_steps": 4,
+      "replan_decisions": 4,
+      "score": 0.24966890026295296,
+      "planning_seconds_per_agent_decision": 7.4380771390279135,
+      "total_seconds_per_agent_decision": 7.501177383200328,
+      "mean_batch_planning_call_seconds": 148.76154278055827,
+      "planning_hours_observed_5_episodes": 5.165331346547163,
+      "cartpole-swingup": 0.30381982897469123,
+      "walker-walk": 0.025964409611144094,
+      "cup-catch": 0.4192224622030237
+    },
+    {
+      "sampler_steps": 2,
+      "replan_decisions": 4,
+      "score": 0.23922616630995713,
+      "planning_seconds_per_agent_decision": 5.988249852720895,
+      "total_seconds_per_agent_decision": 6.025875822003683,
+      "mean_batch_planning_call_seconds": 119.76499705441792,
+      "planning_hours_observed_5_episodes": 4.158506842167289,
+      "cartpole-swingup": 0.31919946342741523,
+      "walker-walk": 0.04923497502729403,
+      "cup-catch": 0.349244060475162
+    },
+    {
+      "sampler_steps": 8,
+      "replan_decisions": 8,
+      "score": 0.1003814082001447,
+      "planning_seconds_per_agent_decision": 5.251674270598094,
+      "total_seconds_per_agent_decision": 5.29043121547699,
+      "mean_batch_planning_call_seconds": 208.3997726427815,
+      "planning_hours_observed_5_episodes": 3.646996021248676,
+      "cartpole-swingup": 0.3343873836690569,
+      "walker-walk": 0.02507217570459539,
+      "cup-catch": -0.05831533477321814
+    },
+    {
+      "sampler_steps": 4,
+      "replan_decisions": 8,
+      "score": 0.15094824251039302,
+      "planning_seconds_per_agent_decision": 3.8231395819346106,
+      "total_seconds_per_agent_decision": 3.8609578490257266,
+      "mean_batch_planning_call_seconds": 151.71188817200837,
+      "planning_hours_observed_5_episodes": 2.6549580430101467,
+      "cartpole-swingup": 0.2740259797236135,
+      "walker-walk": 0.03151853182484418,
+      "cup-catch": 0.1473002159827214
+    },
+    {
+      "sampler_steps": 2,
+      "replan_decisions": 8,
+      "score": 0.24061029478586876,
+      "planning_seconds_per_agent_decision": 3.0611045262972514,
+      "total_seconds_per_agent_decision": 3.098999971485138,
+      "mean_batch_planning_call_seconds": 121.47240183719252,
+      "planning_hours_observed_5_episodes": 2.125767032150869,
+      "cartpole-swingup": 0.3201814653865563,
+      "walker-walk": 0.02346367383066122,
+      "cup-catch": 0.37818574514038883
+    }
+  ],
+  "paired_contrasts": [
+    {
+      "comparison": "selected minus original default",
+      "difference": 0.10343048381622201,
+      "percentile_95_low": 0.004518138672111352,
+      "percentile_95_high": 0.2243474784046054,
+      "leave_one_seed_out_min": 0.04456250772325326,
+      "leave_one_seed_out_max": 0.13596846411981342,
+      "per_task_differences": {
+        "cartpole-swingup": -0.013578171580501614,
+        "walker-walk": -0.013711370491350766,
+        "cup-catch": 0.3375809935205184
+      }
+    },
+    {
+      "comparison": "selected minus highest observed score",
+      "difference": -0.009058605477084262,
+      "percentile_95_low": -0.1312191392154964,
+      "percentile_95_high": 0.09044283043796655,
+      "leave_one_seed_out_min": -0.03873816493430013,
+      "leave_one_seed_out_max": 0.04253964266774488,
+      "per_task_differences": {
+        "cartpole-swingup": 0.016361636411865072,
+        "walker-walk": -0.0025007357804828724,
+        "cup-catch": -0.041036717062634974
+      }
+    }
+  ],
+  "inference_note": "20,000 paired within-task percentile resamples; fixed checkpoint/tasks; no selection adjustment; not equivalence evidence."
+}

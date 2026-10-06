@@ -1,0 +1,16 @@
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/diffusion/dmcontrol/seed0/step0032000.pt --task cartpole-swingup --offset 0 --episodes 5 --arms hcpp8k4
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/diffusion/dmcontrol/seed0/step0032000.pt --task cartpole-swingup --offset 5 --episodes 5 --arms hcpp8k4
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/diffusion/dmcontrol/seed0/step0032000.pt --task cup-catch --offset 0 --episodes 5 --arms hcpp8k4
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/diffusion/dmcontrol/seed0/step0032000.pt --task cup-catch --offset 5 --episodes 5 --arms hcpp8k4
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/diffusion/dmcontrol/seed0/step0032000.pt --task cartpole-swingup --offset 0 --episodes 5 --arms hcpp16k4
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/diffusion/dmcontrol/seed0/step0032000.pt --task cartpole-swingup --offset 5 --episodes 5 --arms hcpp16k4
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/diffusion/dmcontrol/seed0/step0032000.pt --task cup-catch --offset 0 --episodes 5 --arms hcpp16k4
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/diffusion/dmcontrol/seed0/step0032000.pt --task cup-catch --offset 5 --episodes 5 --arms hcpp16k4
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/diffusion/dmcontrol/seed0/step0032000.pt --task cartpole-swingup --offset 0 --episodes 5 --arms hcpp8k1
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/diffusion/dmcontrol/seed0/step0032000.pt --task cartpole-swingup --offset 5 --episodes 5 --arms hcpp8k1
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/diffusion/dmcontrol/seed0/step0032000.pt --task cup-catch --offset 0 --episodes 5 --arms hcpp8k1
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/diffusion/dmcontrol/seed0/step0032000.pt --task cup-catch --offset 5 --episodes 5 --arms hcpp8k1
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/diffusion/dmcontrol/seed0/step0032000.pt --task cartpole-swingup --offset 0 --episodes 5 --arms hcpp16k1
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/diffusion/dmcontrol/seed0/step0032000.pt --task cartpole-swingup --offset 5 --episodes 5 --arms hcpp16k1
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/diffusion/dmcontrol/seed0/step0032000.pt --task cup-catch --offset 0 --episodes 5 --arms hcpp16k1
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/diffusion/dmcontrol/seed0/step0032000.pt --task cup-catch --offset 5 --episodes 5 --arms hcpp16k1

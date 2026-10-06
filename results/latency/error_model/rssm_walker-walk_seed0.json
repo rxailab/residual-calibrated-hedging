@@ -1,0 +1,38 @@
+{
+ "meta": {
+  "family": "rssm",
+  "task": "walker-walk",
+  "run": "seed0",
+  "seed": 0,
+  "width": 1.0,
+  "data_frac": 1.0,
+  "step": 60000,
+  "size": null,
+  "arch": null
+ },
+ "n_train": 4096,
+ "n_test": 128,
+ "K": 4,
+ "by_d": {
+  "4": {
+   "err_left": 0.9760959193545696,
+   "val_nll": 0.07213867455720901,
+   "coverage95": 0.9005342371323529,
+   "regret_pred": 9.901929028332233,
+   "regret_corr": 10.57736387848854,
+   "regret_uncond4": 8.347398382611573,
+   "regret_cond4": 7.276202603243291,
+   "regret_noise": 1.5434236824512482
+  },
+  "8": {
+   "err_left": 0.9529381154611685,
+   "val_nll": 0.15412724018096924,
+   "coverage95": 0.9067239200367647,
+   "regret_pred": 12.255252237431705,
+   "regret_corr": 12.886158128269017,
+   "regret_uncond4": 9.507670905441046,
+   "regret_cond4": 8.953123899176717,
+   "regret_noise": 0.6347663793712854
+  }
+ }
+}

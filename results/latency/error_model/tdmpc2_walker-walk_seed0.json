@@ -1,0 +1,38 @@
+{
+ "meta": {
+  "family": "tdmpc2",
+  "task": "walker-walk",
+  "run": "seed0",
+  "seed": 0,
+  "width": NaN,
+  "data_frac": 1.0,
+  "step": 100000,
+  "size": 5,
+  "arch": "tdmpc2_5M"
+ },
+ "n_train": 4096,
+ "n_test": 128,
+ "K": 4,
+ "by_d": {
+  "4": {
+   "err_left": 0.8524263035757447,
+   "val_nll": 0.12607096135616302,
+   "coverage95": 0.9312286376953125,
+   "regret_pred": 5.664091024547815,
+   "regret_corr": 4.196425170637667,
+   "regret_uncond4": 6.228700992651284,
+   "regret_cond4": 4.040700445882976,
+   "regret_noise": -0.221102025359869
+  },
+  "8": {
+   "err_left": 0.8533579659159825,
+   "val_nll": 0.17534159123897552,
+   "coverage95": 0.9404296875,
+   "regret_pred": 6.366627369076014,
+   "regret_corr": 5.573752184398472,
+   "regret_uncond4": 6.08361277077347,
+   "regret_cond4": 5.403951197862625,
+   "regret_noise": 0.006044294685125351
+  }
+ }
+}

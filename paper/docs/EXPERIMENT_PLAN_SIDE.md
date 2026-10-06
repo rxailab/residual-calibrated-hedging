@@ -1,0 +1,327 @@
+# Side paper: experiment plan
+
+**Paper.** *Planning through latency: committed-prefix control and latency-faithful evaluation for slow world models* (Nature Communications Article format, `ncomms/main.tex`).
+**Version.** 0.1, 4 October 2026, written before any side-paper run. Nothing below has been run.
+**Compute.** About 155 V100-hours plus about 4 hours of L40S/H200 time for timing only (Section 6). No training.
+
+---
+
+## 1. What the paper must show
+
+The paper proposes a method, not a measurement report. Its claims, and the evidence each needs:
+
+| Claim | Evidence needed | Study |
+|---|---|---|
+| C1. Paused-simulator evaluation hides latency, and amortised cost is not response latency. | Existing diffusion configuration records (already in `evidence/`), plus single-environment latencies measured properly. | 0 (done), 2 |
+| C2. Committed-prefix planning (CPP) is exact for a perfect model. | Proof (in Methods) and a bit-for-bit numerical check. | G0 |
+| C3. CPP recovers most of the return lost by time-aligned asynchronous planning, at no extra compute. | Delay sweep over three families, three tasks, three models each. | 1 |
+| C4. The delay decomposition separates feedback-rate loss from mismatch loss and is informative. | Paused arm at r = d alongside the asynchronous arms. | 1 |
+| C5. Paused rankings of planner configurations do not survive real latency; the latency-aware rule recovers return. | Latency of 8 configurations on 3 GPU types; returns across the delay grid. | 2 |
+| C6. The method generalises to models we did not train and to a diffusion world model. | Public LeWM checkpoints (3 tasks); MiniWorld diffusion model (2 tasks). | 3 |
+| C7. The delay-in-decisions abstraction reproduces wall-clock asynchronous execution. | Threaded real-time runs compared with fixed-d runs. | 4 |
+
+## 2. Separation from the main MetricTrust paper
+
+Used here: the final checkpoints of the RSSM, JEPA and TD-MPC2 runs (seed0, seed1, seed2) and the diffusion model's 32k seed0 snapshot, the DMControl data pipeline, the MPPI implementation, and the 18 diffusion configuration records (timings only).
+
+Not used here, and must not appear in the paper: any offline metric (M1-M12), validity or regret results, checkpoint rankings or between-family quality comparisons, within/between-run populations, ROF, latent-space normalisation, the TwoRoom cost-swap result, the LunarLander results, and the DINO-WM / LIBERO held-out sets (reserved for the main paper's confirmatory test). The paper never uses intermediate snapshots, so it cannot be read as a checkpoint-selection study.
+
+Episodes use **new initial-state seeds 950,000-950,049**, disjoint from S_U1 (900,000-900,099) and the LunarLander sets (800,000-, 900,000-), so no closed-loop number in the side paper duplicates a main-paper number. Check with `grep -rn "950_0\|9500" experiments scripts` before the runs.
+
+The public LeWM checkpoints are run on PushT, Reacher and Cube only. TwoRoom stays with the main paper.
+
+## 3. Implementation (new files only)
+
+The main diffusion evaluation (array 24927064) is still starting tasks; its pending tasks import `experiments/dmc/evaluate.py`, `evaluate_diffusion.py` and `planners/mppi.py` at start. **Do not edit those files until the array has finished.** All side-paper code goes in a new package `latency/` that imports from them.
+
+| File | Contents |
+|---|---|
+| `latency/schedule.py` | The delay-in-decisions episode loop, family-agnostic: arms `paused(r)`, `naive(d)`, `aligned(d)`, `cpp(d)`; pre-episode plan with the simulator paused; candidate length d + H in asynchronous arms; warm start shifted by the decisions executed. |
+| `latency/mppi_prefix.py` | Batched MPPI step with an optional committed prefix (overwrite positions 0:d of every candidate after clipping); otherwise identical to `evaluate.mppi_step`. |
+| `latency/run_dmc.py` | Study 1 and 2 driver for RSSM / JEPA / TD-MPC2 (reuses `EnvPool`, adapters, `filter_step`); writes one JSON per (family, task, seed, arm, d, config) with per-episode returns, decisions, plan time, non-finite counts and the git hash. |
+| `latency/run_diffusion.py` | Study 3 diffusion driver, d in whole blocks (8, 16 decisions); prefix in blocks. |
+| `latency/run_lewm.py` | Study 3 LeWM driver in the stable-worldmodel env (`PYTHONNOUSERSITE=1`, `/mmfs1/storage/users/xiar3/envs/metrictrust-swm`), native CEM with prefix overwrite. |
+| `latency/timing.py` | Single-environment call latency: 20 warm-up calls, then 200 timed calls with `torch.cuda.synchronize()` at both ends, states sampled from evaluation episodes; records GPU name, clocks (`nvidia-smi -q -d CLOCK`), other processes on the GPU. |
+| `latency/wallclock.py` | Study 4: planner thread plus a simulator thread paced by `time.monotonic()` at Δt; the action queue is read at each tick; records the realised delay of every call. |
+| `tests/test_latency.py` | G0 exactness test and conformance checks (Section 4). |
+| `slurm/latency_*.sh` | One array per study; each task loads its config line from `latency/runs_*.txt`. |
+
+Copy the 27 final latent checkpoints (about 1 GB) and the diffusion 32k seed0 snapshot from scratch to `/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/` first: scratch is purged by access time (plan amendment A6).
+
+## 4. Gate G0: exactness and conformance (CPU or one GPU, under 1 hour)
+
+1. **Exactness.** In the linear-Gaussian testbed (`utility/u1_planning.py`) with process noise off and the true system as the model, run `paused(d)` and `cpp(d)` for d in {1, 2, 4} with the same noise stream per call. Pass: identical action sequences and returns to floating-point tolerance (1e-9). Also confirm that `aligned(d)` differs.
+2. **Equivalence at d = 0.** `cpp` with an empty prefix reproduces `evaluate.mppi_step` bit for bit on one RSSM checkpoint (TINY settings).
+3. **Equal compute.** `aligned(d)` and `cpp(d)` make the same number of model calls with the same tensor shapes (assert in the driver).
+4. **Prefix invariance.** For a fixed batch of candidates, adding a constant to all costs leaves the MPPI weights unchanged (unit test).
+
+No study starts until G0 passes.
+
+## 5. Studies
+
+### Study 0: motivating reanalysis (done)
+
+`analyse_pilot.py` on `evidence/pilot_records.json`; Fig. 2 from `scripts/fig_motivation.py`. Only timings are used in the paper.
+
+### Study 1: delay robustness and decomposition (primary)
+
+- **Models.** RSSM, JEPA, TD-MPC2; cartpole-swingup, walker-walk, cup-catch; final checkpoints of seed0, seed1, seed2: 27 models.
+- **Floor rule (fixed now).** A (family, task) cell enters pooled estimates only if its mean `paused(1)` normalised return over the three models is at least 0.15. Expected exclusion: JEPA walker (0.03-0.06 on the main-study seeds).
+- **Arms.** `paused(1)`; and for each d in {1, 2, 4, 8, 16}: `paused(d)`, `naive(d)`, `aligned(d)`, `cpp(d)`. 21 runs per model.
+- **Planner.** Population 512, 6 iterations, H = 32, temperature 0.5 (main-study settings), candidate length 32 + d in asynchronous arms.
+- **Episodes.** 50 per run (seeds 950,000-950,049), shared across arms. Sample size check: on the main grid the per-episode SD of normalised return is about 0.1-0.3; a paired SD of 0.2 gives a standard error of 0.028 per model-arm contrast and about 0.006 pooled over 24 models, enough to resolve a pooled CPP-minus-aligned difference of 0.03. Re-check with the seed0 runs (pilot, below) before the rest.
+- **Pilot.** seed0 of every family and task first (9 models, about 12 V100-hours). If the pooled paired SD is above 0.35, raise episodes to 100 for the remaining models (adds about 20 V100-hours).
+- **Cost.** About 1.4 V100-hours per model at 50 episodes (batched lockstep episodes; planning time falls roughly as 1/d). 27 models: **about 38 V100-hours**.
+
+### Study 2: latency-aware configuration
+
+- **Timing.** For each family (seed0 models) and each configuration c in population {64, 128, 256, 512} x iterations {2, 6}, measure L50 and L95 at batch size 1 on a V100, an L40S and an H200 (8 configurations x 3 families x 3 GPUs = 72 timing jobs of about 2 minutes; about 3 hours in all). Also time the diffusion planner (s in {2, 4, 8}, population 64) and LeWM's CEM on the V100 at batch 1, which gives the exact single-environment figure the paper's motivation section is waiting for.
+- **Returns.** For each family x task (seed0 models) x configuration: `paused(1)` and `cpp(d)` for d in {1, 2, 4, 8, 16} (a grid that covers every measured d(c), so any GPU's operating point is read off the grid without new runs). 3 x 3 x 8 x 6 = 432 runs at 50 episodes; cheap configurations dominate. **About 30 V100-hours.**
+- **Outputs.** Kendall's tau between the paused ranking and the latency-faithful ranking of the 8 configurations per (family, task, GPU); return of c* minus the paused-optimal configuration at its own delay.
+
+### Study 3: generality
+
+- **LeWM public checkpoints** (`quentinll/lewm-pusht`, `lewm-reacher`, `lewm-cube`) with stable-worldmodel's evaluation harness and native CEM. d in {1, 2, 4} action blocks (LeWM plans in blocks of 5 steps); arms `paused(1)`, `paused(d)`, `aligned(d)`, `cpp(d)`; 100 episodes per run (binary success needs more episodes). First check that each task's `paused(1)` success reproduces the published value within its Wilson interval; a task that fails is dropped and reported. **About 15 V100-hours** (estimate; measure on the first task).
+- **Diffusion world model** (32k seed0 snapshot, 2 sampler steps). Cartpole and cup-catch only (walker is at the floor, 0.02-0.05). Arms `paused(8)`, `paused(16)`, `aligned(8)`, `cpp(8)`, `aligned(16)`, `cpp(16)`; 10 episodes per run in two batches of 5. From the configuration records, about 2.1 V100-hours per 5 episodes at r = 8 and about half at r = 16, times 1.25 (d = 8) or 1.5 (d = 16) for the longer candidates: about 23 V100-hours per task. **About 46 V100-hours.** Reported descriptively (10 episodes per arm); no pooled hypothesis test uses these runs.
+
+### Study 4: wall-clock faithfulness
+
+RSSM seed0 on cartpole-swingup (Δt = 0.02 s), single environment, one V100, planner configurations whose measured L95 gives d of about 2 and about 4. 30 wall-clock episodes per configuration with `cpp` and `aligned`, compared with Study 1/2 runs at d = ceil(L50/Δt) and ceil(L95/Δt) on the same seeds. Rendering runs on CPU in the simulator thread; the GPU node must be otherwise idle (request `--exclusive`). **About 3 V100-hours.**
+
+## 6. Budget and wall-clock
+
+| Study | V100-hours | Other GPU | Wall-clock on available V100s |
+|---|---|---|---|
+| G0 tests | 1 | - | half a day including writing the code |
+| 1 delay sweep | 38 (+20 if episodes rise to 100) | - | about 4 h on 12 V100s |
+| 2 configuration | 30 | 3 h timing (L40S, H200) | about 4 h on 12 V100s; timing jobs whenever an H200 / L40S frees |
+| 3 LeWM | 15 | - | about 2 h |
+| 3 diffusion | 46 | - | about 3 h (24 jobs of 1-2.7 h, 5 episodes each) |
+| 4 wall-clock | 3 | - | 3 h, one exclusive node |
+| Contingency 15 % | 20 | | |
+| **Total** | **about 155** | **about 4 h** | **about 2 days after the code passes G0** |
+
+V100s are tied up by the main diffusion evaluation until about 11:00 on 5 October; side-paper jobs should go to gpu-short behind it and never delay main-study jobs.
+
+## 7. Pre-specified hypotheses (Supplementary Note 1)
+
+Primary (Holm-corrected as one family of three):
+
+- **H1.** Pooled over cells that pass the floor rule, R(cpp(d)) - R(aligned(d)) > 0 at each of d = 2, 4, 8. Test: one-sided hierarchical bootstrap, alpha = 0.05 after Holm. Falsified if the interval includes 0 at any of the three delays.
+- **H2.** At d = 4 and d = 8, CPP removes at least half of the time-aligned planner's mismatch loss: M_cpp(d) <= 0.5 M_aligned(d), pooled. Falsified if the bootstrap interval of M_cpp(d) / M_aligned(d) lies above 0.5.
+- **H3.** For at least 5 of the 9 (family, task) cells on the V100, the latency-aware configuration c* differs from the paused-optimal configuration and has higher return at its own delay. Falsified if fewer than 5.
+
+Secondary (estimates with intervals, no test): the decomposition per family and d; naive vs aligned; Kendall's tau of paused vs latency-faithful configuration rankings per GPU; LeWM and diffusion results; wall-clock agreement.
+
+A negative outcome is still reportable: if H1 fails, the paper becomes a protocol-and-decomposition paper whose decomposition explains why prefix prediction did not help (large M_cpp means the model cannot predict through the delay).
+
+## 8. Analysis
+
+`latency/analyse.py`: reads the run JSONs, applies the floor rule, computes per-model means and paired differences, the hierarchical bootstrap (models within cell, episodes within model; 10,000 resamples; seed fixed), the decomposition terms, Holm adjustment, and writes `results/latency/summary.json` and Figs 3-5. Written and frozen (git commit) before Study 1's non-pilot runs finish.
+
+## 9. Risks
+
+| Risk | Mitigation |
+|---|---|
+| Scratch purge removes final checkpoints | Copy to storage before anything else (Section 3). |
+| Main diffusion evaluation still running | New files only; side jobs queued behind it on gpu-short. |
+| CPP shows no gain because the latent models predict poorly through d | H2 and the decomposition make this a measured result; report M_cpp(d) per family. |
+| LeWM harness does not reproduce published success on a task | Drop that task, report it. |
+| Diffusion runs too noisy at 10 episodes | Descriptive only; the paper's claims rest on Studies 1-2. |
+| Real latency jitter makes fixed d unrepresentative | Study 4 measures it; report d from L95 and L50. |
+
+## 10. Order of work
+
+1. Copy checkpoints to storage. Write `latency/` and the G0 tests; pass G0.
+2. Study 2 timing (cheap, informs which d values matter) and Study 1 pilot (seed0).
+3. Freeze `latency/analyse.py`; run the rest of Study 1, Study 2 returns, Study 3, Study 4.
+4. Fill the `\pending{}` items in `ncomms/main.tex`; write Figs 3-5 and Table 2.
+
+---
+
+## 11. Launch log
+
+**4 October 2026, 22:50-23:20.** Code in `latency/` (schedule.py, run_dmc.py, timing.py, run_diffusion.py, wallclock.py), Slurm scripts `slurm/latency_*.sh`, and run lists `latency/runs_*.txt`.
+
+**Gate G0 passed** (`python tests/test_latency.py`, CPU). With an exact linear model, cpp(d) reproduces paused(d)'s actions to 1e-9 for d = 1, 2 and 4, and aligned and naive differ. An inexact model breaks the equality. Aligned and cpp make identical cost calls, and MPPI is invariant to a constant cost shift. G0 item 2 (bit equality with `evaluate.mppi_step`) was dropped. `PrefixMPPI` gives non-finite costs weight zero (D11) where `mppi_step` maps them to 1e9. The main study recorded no non-finite costs for these models.
+
+**Smoke tests passed.** Real EGL rendering on astro: RSSM paused1 and cpp4 at 0.64 s per call for 50 batched episodes on an L40S. Diffusion: all arms with a tiny planner on an L40. Timing script: TD-MPC2 cup-catch at 25-115 ms per single-environment call on an L40S.
+
+| Study | Job | Where | Notes |
+|---|---|---|---|
+| 1 | 24931612, array 0-26 | astro (L40 / L40S) | seed0 models first (tasks 0-8) |
+| 3, diffusion | 24931613, array 0-23 | astro (L40 / L40S) | 2 tasks x 2 seed batches x 6 arms, 5 episodes each |
+| 2, returns | 24931614, array 0-62 | astro (L40 / L40S) | 7 configurations x 9 models; pop 512 / 6 iterations come from Study 1 |
+| 2, timing V100 (+ diffusion latency) | 24931680 | gpu-short, exclusive node | |
+| 2, timing L40S | 24931681 | astro, exclusive node | |
+| 2, timing H200 | 24931682 | gpu-short, exclusive node | |
+| 4, wall clock | 24931683, array 0-1 | gpu-short V100, exclusive node | pop 512 / 6 iterations and pop 128 / 2 iterations |
+
+**Deviations from Sections 5-6, decided before any result:**
+
+1. **Closed-loop returns run on astro L40 / L40S, not V100s.** The V100s are held by the main diffusion evaluation until about 11:00 on 5 October, and astro was idle. Every arm of a model runs in one job, so paired arms always share a GPU. Every diffusion job is restricted to astro, which has one GPU architecture (Ada), so all diffusion arms share sampler precision. Latency is measured separately per GPU type, so the choice of GPU for returns does not enter any latency figure.
+2. **Timing jobs run the nine models in sequence on an exclusive node, one job per GPU type**, instead of 72 separate jobs, so that co-located jobs cannot inflate L95. Diffusion single-environment latency is measured on the V100 only, on cartpole (s = 2, 4, 8; d = 0, 8, 16; 5 timed calls each).
+3. **The LeWM part of Study 3 is not launched.** Only the TwoRoom LeWM checkpoint and dataset exist locally. PushT, Reacher and Cube need the public checkpoints and datasets downloaded, and a harness that reproduces each task's published success rate first (Section 5, Study 3).
+
+Results: `results/latency/{dmc,diffusion,timing,wallclock}/`. Logs: `/scratch/hpc/11/xiar3/MetricTrust/runs/lat-*.out`.
+
+---
+
+## 12. Method search after the novelty audit (option B, 5 October 2026)
+
+`sidepaper/NOVELTY_AUDIT.md` showed that the v2 method claims are not novel. Option B looks for a method that reduces the residual mismatch M_cpp(d) left by committed-prefix planning. A second prior-art search covered four candidates. Sensitivity correction (C1) is close to asNMPC and F-MPPI. Multi-anchor selection (C2) is close to multi-stage/contingency MPC, DATS and possibly CLIS-MPPI (CDC 2026, content not public). Online calibration (C3) is classical. Re-anchoring between iterations (C4) matches Melon et al. 2021 and RTI.
+
+**Offline diagnostic** (`latency/diagnose_anchor.py`, D_eval windows, model-predicted cost from the true post-delay latent; results in `results/latency/diagnose/`):
+
+- The predicted anchor is close to the truth: its error is 1-20 % of the stale error for RSSM and JEPA, and 7-140 % for TD-MPC2.
+- Where committed-prefix planning fails in closed loop (RSSM walker, JEPA, TD-MPC2), the predicted anchor still causes systematic regret.
+- The actual error costs 1.3-3x more than a random error of the same size. Halving the error roughly halves the regret.
+- Corrections that do not work: C1 (finite-difference sensitivity on the top 8 residual principal components, which hold only 10-50 % of the error), bias correction, and C2 nearest-anchor selection.
+- What works: hedging, i.e. averaging each candidate's cost over K anchors (the predicted anchor plus calibration residuals). At d = 2, K = 16 removes 25-55 % of the regret where there is any, and changes nothing where there is none.
+
+**Candidate method.** Residual-hedged committed-prefix MPPI (`latency/hedge.py`, arms `hcpp<d>k<K>`). The prefix is rolled once. The free part is scored from K anchors: z_hat plus K - 1 residuals drawn per episode and call from a bank of 512 d-step residuals of the same model on D_train windows. The anchor-averaged cost replaces the cost. K = 1 is committed-prefix planning in its roll-once form. It needs no ensemble and no retraining, so it works for single deterministic world models.
+
+**Closed-loop pilot, decision rule written before the runs.** The 8 seed0 models of the eligible cells, population 512, 6 iterations, the 50 Study 1 seeds. Arms hcpp{d}k1, hcpp{d}k4 and hcpp{d}k16 at d = 2, 4 and 8; paused(d), aligned(d) and cpp(d) come from Study 1. The primary pilot contrast is R(hcpp_k16) - R(hcpp_k1), pooled over cells with equal weight, at each d, with an episode bootstrap (one model per cell).
+
+- **Proceed** to the full study (3 seeds, latency-matched comparison, diffusion) if the contrast is positive with its 95 % interval above 0 at two or more of the three delays.
+- **Report the method as ineffective** and fall back to option A if the contrast's interval includes 0 at all three delays.
+- Otherwise, discuss it with the author.
+
+Hedging multiplies the planner's compute by K. Whether that costs latency at batch size 1 is a separate question, answered by the Study 2 timing jobs. The pilot tests efficacy at equal population, not at equal latency.
+
+**Pilot result (5 October 2026, 13:25; `results/latency/hedge_pilot.json`).** R(k16) - R(k1), pooled over 8 seed0 cells:
+
+| d | estimate | 95 % interval | Share of remaining mismatch removed |
+|---|---|---|---|
+| 2 | -0.017 | [-0.041, +0.005] | none |
+| 4 | +0.022 | [+0.0003, +0.044] | 0.26 |
+| 8 | +0.045 | [+0.015, +0.076] | 0.45 |
+
+By the rule the verdict is **proceed**, but at d = 4 only by a hair. With 50 episodes batched, a K = 16 call costs 16.8x the time of K = 1 (range 15.4-17.3), so the pilot is an efficacy test at equal population, not at equal latency. A batch-1 latency test of hedged calls was submitted (job 24946728).
+
+**Replication, written before its runs.**
+
+- **Runs:** the same 9 arms on the seed1 and seed2 models of the 8 cells (16 models, about 30 GPU-hours on astro).
+- **Confirmatory analysis, over all 24 models:** R(k16) - R(k1) at d = 4 and at d = 8, pooled with equal cell weight. Hierarchical bootstrap (models within cell, then episodes; 10,000 resamples). One-sided, alpha = 0.05 with Holm's correction over the two delays.
+- **d = 2** is reported as secondary: the pilot showed no benefit at the shortest delay.
+- **Fewer anchors:** K = 4 vs K = 1 is secondary too. The pilot shows K = 4 matching K = 16 on several cells.
+
+**Batch-1 latency of hedging** (`latency/timing_hedge.py`, L40S, not exclusive, job 24947339). Scoring all anchors in one batched call (`batch_anchors=True`, which matches the looped scores to 6e-6) makes hedging nearly free for one environment. RSSM walker:
+
+| Configuration | Latency per call |
+|---|---|
+| K = 1, population 512 | 100-105 ms |
+| K = 4, population 512 | 102-106 ms |
+| K = 16, population 128 | 103-109 ms |
+| K = 16, population 512 | 156-161 ms |
+
+Single-environment latency is set by the H sequential model steps, not by the number of candidate rows. The sequential first implementation cost K times the latency.
+
+**Equal-latency comparison, written before its runs.** The arms whose single-environment latency equals plain committed-prefix planning (K = 1, population 512) within 3 % are:
+
+- K = 4, population 512: already in the pilot and the replication.
+- K = 16, population 128: new arms `hcpp{2,4,8}k16` with `--pop 128 --iters 6`, on all 24 models (job below).
+
+Pilot (seed0) for K = 4 vs K = 1, both at population 512: d = 2: -0.004 [-0.023, +0.016]; d = 4: +0.017 [-0.010, +0.044]; d = 8: +0.037 [+0.013, +0.064].
+
+Confirmatory, over 24 models with the hierarchical bootstrap: R(K=4, pop 512) - R(K=1, pop 512) and R(K=16, pop 128) - R(K=1, pop 512) at d = 4 and d = 8. One-sided, Holm over the four contrasts.
+
+**Diffusion hedging (approved 5 October 2026; written before its runs).**
+
+Setup:
+- Model: the 32k seed0 diffusion snapshot, 2 sampler steps, population 64, 2 iterations, H = 32 decisions.
+- Tasks: cartpole and cup catch. Walker is at the floor.
+- Arms: `hcpp{8,16}k{1,4}` (`latency/run_diffusion.py`). The committed prefix is sampled once per episode. Each anchor is the context window (last 4 latent frames) with the predicted prefix frames plus one residual. The residual bank holds 128 d-step residuals of the sampler on D_train episodes 0-99.
+- K = 1 is committed-prefix planning in its roll-once form. It differs from the earlier `cpp` arm, which samples the prefix afresh for every candidate.
+- Episodes: 10 per arm, as two jobs of 5 (seeds 950,000-004 and 950,005-009). All arms run on astro (L40 / L40S).
+- Budget: about 43 GPU-hours (K = 4 is about 4x K = 1).
+
+Analysis, descriptive as for the other diffusion arms (no pooled test):
+
+- R(K4) - R(K1) per task and delay, with episode-level paired standard errors.
+- Reported alongside paused(d), aligned(d) and cpp(d) from Study 3.
+
+Smoke test passed (job 24955374).
+
+**Diffusion hedging result (5 October 2026, 23:30; `results/latency/diffusion_hedge_summary.json`).** All 16 jobs completed. R(K4) - R(K1), with episodes paired (10 per arm):
+
+| Task | d | R(K4) - R(K1) |
+|---|---|---|
+| Cup catch | 8 | +0.177 ± 0.094 |
+| Cartpole | 8 | +0.011 ± 0.031 |
+| Cup catch | 16 | +0.084 ± 0.084 |
+| Cartpole | 16 | -0.053 ± 0.021 |
+
+Inconclusive at this sample size. The paper reports it descriptively as a feasibility demonstration (Table 4).
+
+The exclusive-node timing is complete on V100, L40S and H200. The default planner's L95 for one environment is 126-161 ms on the V100, 77-98 ms on the L40S and 103-137 ms on the H200.
+
+---
+
+## 13. The proposed method: delay-error model and hand-off-aware planning (6 October 2026, written before its runs)
+
+**Why.** CLIS-MPPI (CDC 2026) already hedges MPPI over sampled execution-time states under delay; see the novelty-audit addendum of 6 October. A second prior-art search found close precedent for each component, and no work combining them for learned world models:
+
+- FutureRTC and Decoupled Delay Compensation correct the post-delay state with a learned residual.
+- SLS² fits a heteroscedastic latent-error model for robust MPC, without delay.
+- Filter-Aware MPC and Robust Predictable Control penalise uncertainty during planning.
+
+The proposed method (`latency/delay_error.py`) is:
+
+1. A post-hoc delay-error model, fitted on the frozen world model's own d-step residuals on D_train. It is conditioned on the predicted latent, the current latent and the committed actions, and predicts the residual's mean and variance.
+2. Hedging over N(z_hat + mean, var), with K = 4 anchors. These are batched, so they add no latency at batch size 1.
+3. A hand-off penalty. A second head predicts the log-variance of the next call's anchor from (state, actions to be committed). Candidates are penalised by lam x std(J) x the z-score of that prediction, so the planner prefers commitments whose outcome it can predict.
+
+**Feasibility (offline, `latency/error_model.py`, 5 models, d = 4 and 8, `results/latency/error_model/`).**
+
+- The mean correction removes 2-38 % of the anchor error.
+- The 95 % intervals cover 85-94 % of the errors.
+- Hedging with the learned variance is the best or tied-best of the four options in 5 of the 6 cases where there is regret to remove. The unconditional bank sometimes hurts.
+
+**Tuning.**
+
+- Models and episodes: the seed0 models (8 cells), 20 episodes from seeds 970,000-970,019, disjoint from every other run.
+- Delays and arms: d in {4, 8}; `ecpp{d}k4`, `ecpp{d}k4h{0.25, 0.5, 1.0}` and `ecpp{d}k4r{0.25, 0.5, 1.0}`.
+- Rule (`latency/select_lambda.py`): lam_h and lam_r are each the argmax of pooled normalised return over 8 cells x 2 delays. It is applied automatically by a dependent job, which then launches the confirmatory array.
+
+**Confirmatory.**
+
+- Models and episodes: the seed1 and seed2 models (16, never used for tuning), seeds 950,000-950,049, 50 episodes, d in {4, 8}, population 512, 6 iterations.
+- New arms: `ecpp{d}k4`, `ecpp{d}k4h{lam_h}`, `ecpp{d}k4r{lam_r}`, `mcpp{d}` (mean correction only) and `scpp{d}k4` (homoscedastic hedge). Existing arms from the replication: `hcpp{d}k4` and `hcpp{d}k1`.
+- Contrasts, each at d = 4 and 8, one-sided, Holm over all eight, hierarchical bootstrap over 16 models in 8 cells:
+  1. ecpp k4 vs hcpp k4: learned vs unconditional hedge.
+  2. ecpp k4 h vs ecpp k4: the hand-off penalty adds return.
+  3. ecpp k4 h vs ecpp k4 r: the hand-off penalty beats a generic mean-std risk penalty of the same form.
+  4. ecpp k4 h vs hcpp k1: the full method vs plain committed-prefix planning.
+- Secondary: mcpp and scpp, against ecpp k4 and hcpp k1.
+
+**Budget.** About 15 GPU-hours on astro (tuning about 5, confirmatory about 10), roughly 3-4 hours of wall-clock.
+
+**Section 13 result (6 October 2026, 13:35; `results/latency/de_confirm.json`, `results/latency/tune_selection.json`).**
+
+**Tuning:**
+
+- The hand-off penalty lowered return at every strength. Pooled tuning return was 0.313 without it, and 0.298, 0.251 and 0.227 at lam 0.25, 0.5 and 1.0.
+- The risk penalty peaked at lam 0.5 (0.330).
+- Chosen: lam_h = 0.25, lam_r = 0.5.
+
+**Primary contrasts, held out:** none supported.
+
+| Contrast | d = 4 | d = 8 |
+|---|---|---|
+| C1: learned vs bank | +0.001 | +0.011 |
+| C2: hand-off vs none | -0.026 | -0.021 |
+| C3: hand-off vs risk | -0.011 | +0.006 |
+| C4: full vs committed prefix | -0.001 | +0.026 |
+
+**Secondary:**
+
+| Contrast | d = 4 | d = 8 |
+|---|---|---|
+| Bank vs committed prefix | +0.025 | +0.037 |
+| Learned vs committed prefix | +0.025 | +0.047 |
+| Learned vs time-aligned | +0.044 | +0.090 |
+| Mean correction only vs committed prefix | +0.015 (n.s.) | +0.020 (n.s.) |
+| Fixed vs learned spread | +0.008 | -0.020 |
+
+**Decision (the author's choice, option A):** the paper's method is residual-calibrated hedging (RCH): the residual bank, with the learned error model as an optional variant. The hand-off penalty and the risk penalty are reported as failed ablations. The manuscript was rewritten as v4 on 6 October; v3 is in `archive/main_v3_before_rch.tex`.

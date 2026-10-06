@@ -1,0 +1,8 @@
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/jepa/cartpole-swingup/seed0/step0060000.pt --arms hcpp8k1,hcpp8k4,hcpp8k16,hcpp4k1,hcpp4k4,hcpp4k16,hcpp2k1,hcpp2k4,hcpp2k16
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/jepa/cup-catch/seed0/step0060000.pt --arms hcpp8k1,hcpp8k4,hcpp8k16,hcpp4k1,hcpp4k4,hcpp4k16,hcpp2k1,hcpp2k4,hcpp2k16
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/rssm/cartpole-swingup/seed0/step0060000.pt --arms hcpp8k1,hcpp8k4,hcpp8k16,hcpp4k1,hcpp4k4,hcpp4k16,hcpp2k1,hcpp2k4,hcpp2k16
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/rssm/cup-catch/seed0/step0060000.pt --arms hcpp8k1,hcpp8k4,hcpp8k16,hcpp4k1,hcpp4k4,hcpp4k16,hcpp2k1,hcpp2k4,hcpp2k16
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/rssm/walker-walk/seed0/step0060000.pt --arms hcpp8k1,hcpp8k4,hcpp8k16,hcpp4k1,hcpp4k4,hcpp4k16,hcpp2k1,hcpp2k4,hcpp2k16
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/tdmpc2/cartpole-swingup/seed0/step0100000.pt --arms hcpp8k1,hcpp8k4,hcpp8k16,hcpp4k1,hcpp4k4,hcpp4k16,hcpp2k1,hcpp2k4,hcpp2k16
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/tdmpc2/cup-catch/seed0/step0100000.pt --arms hcpp8k1,hcpp8k4,hcpp8k16,hcpp4k1,hcpp4k4,hcpp4k16,hcpp2k1,hcpp2k4,hcpp2k16
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/tdmpc2/walker-walk/seed0/step0100000.pt --arms hcpp8k1,hcpp8k4,hcpp8k16,hcpp4k1,hcpp4k4,hcpp4k16,hcpp2k1,hcpp2k4,hcpp2k16

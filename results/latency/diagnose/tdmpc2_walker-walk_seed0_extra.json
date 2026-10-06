@@ -1,0 +1,39 @@
+{
+ "meta": {
+  "family": "tdmpc2",
+  "task": "walker-walk",
+  "run": "seed0",
+  "seed": 0,
+  "width": NaN,
+  "data_frac": 1.0,
+  "step": 100000,
+  "size": 5,
+  "arch": "tdmpc2_5M"
+ },
+ "n": 64,
+ "n_cal": 256,
+ "p": 8,
+ "K": 16,
+ "pop": 512,
+ "iters": 6,
+ "H": 32,
+ "gpu": "NVIDIA L40S",
+ "by_d": {
+  "2": {
+   "anchor_err": 1.3637578102224652,
+   "stale_err": 4.329314283674789,
+   "anchor_err_frac_in_top_p": 0.20031791210213587,
+   "cal_var_frac_top_p": 0.29835409587896194,
+   "plan_err_pred": 3.468902948521867,
+   "plan_err_noise": 4.338848740368669,
+   "regret_pred": 3.6470528040081263,
+   "regret_noise": 0.03287455067038536,
+   "regret_naive": 6.082861898466945,
+   "regret_rand_dir": 2.720590455457568,
+   "regret_shuffled_err": 3.8828203212469816,
+   "regret_half_err": 2.9392376635223627,
+   "regret_hedge_K4": 3.878036718815565,
+   "regret_hedge_K16": 2.774071531370282
+  }
+ }
+}

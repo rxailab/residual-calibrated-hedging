@@ -1,0 +1,39 @@
+{
+ "meta": {
+  "family": "rssm",
+  "task": "walker-walk",
+  "run": "seed0",
+  "seed": 0,
+  "width": 1.0,
+  "data_frac": 1.0,
+  "step": 60000,
+  "size": null,
+  "arch": null
+ },
+ "n": 64,
+ "n_cal": 256,
+ "p": 8,
+ "K": 16,
+ "pop": 512,
+ "iters": 6,
+ "H": 32,
+ "gpu": "NVIDIA L40S",
+ "by_d": {
+  "2": {
+   "anchor_err": 5.606082969575376,
+   "stale_err": 142.63077039518132,
+   "anchor_err_frac_in_top_p": 0.4023021682845755,
+   "cal_var_frac_top_p": 0.47447400210751384,
+   "plan_err_pred": 5.408125320879749,
+   "plan_err_noise": 8.557411645390543,
+   "regret_pred": 7.836389020085335,
+   "regret_noise": -0.9309756755828857,
+   "regret_naive": 16.28268003463745,
+   "regret_rand_dir": 3.8985448516905308,
+   "regret_shuffled_err": 5.743197336792946,
+   "regret_half_err": 3.9371681213378906,
+   "regret_hedge_K4": 6.203527558594942,
+   "regret_hedge_K16": 3.5916085951030254
+  }
+ }
+}

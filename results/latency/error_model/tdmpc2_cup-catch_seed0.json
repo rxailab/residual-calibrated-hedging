@@ -1,0 +1,38 @@
+{
+ "meta": {
+  "family": "tdmpc2",
+  "task": "cup-catch",
+  "run": "seed0",
+  "seed": 0,
+  "width": NaN,
+  "data_frac": 1.0,
+  "step": 100000,
+  "size": 5,
+  "arch": "tdmpc2_5M"
+ },
+ "n_train": 4096,
+ "n_test": 128,
+ "K": 4,
+ "by_d": {
+  "4": {
+   "err_left": 0.6153095197744671,
+   "val_nll": -0.43208688497543335,
+   "coverage95": 0.900665283203125,
+   "regret_pred": 0.575062652118504,
+   "regret_corr": 0.19051088206470013,
+   "regret_uncond4": -0.3233237937092781,
+   "regret_cond4": 0.055046115070581436,
+   "regret_noise": -0.6540606440976262
+  },
+  "8": {
+   "err_left": 0.6228112584791234,
+   "val_nll": -0.4195440411567688,
+   "coverage95": 0.9072113037109375,
+   "regret_pred": 0.3159815911203623,
+   "regret_corr": 0.0433855876326561,
+   "regret_uncond4": -0.17263039574027061,
+   "regret_cond4": -0.9293855736032128,
+   "regret_noise": -0.5029545640572906
+  }
+ }
+}

@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+*.log
+*.blg
+*.aux
+*.out
+*.bbl
+slurm-*.out
+# model weights and caches: regenerated, never committed
+*.pt
+*.pth
+*.safetensors
+results/latency/error_model/models/
+third_party/MiniWorld/
+# directories created by paths.py at import time
+registry/
+artifacts/
+results/utility/
+results/metrics/

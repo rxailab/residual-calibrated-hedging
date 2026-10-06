@@ -1,0 +1,3 @@
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/rssm/walker-walk/seed0/step0060000.pt
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/jepa/cup-catch/seed0/step0060000.pt
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/tdmpc2/cup-catch/seed0/step0100000.pt

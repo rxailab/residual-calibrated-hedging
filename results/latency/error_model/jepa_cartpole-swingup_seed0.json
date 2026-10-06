@@ -1,0 +1,38 @@
+{
+ "meta": {
+  "family": "jepa",
+  "task": "cartpole-swingup",
+  "run": "seed0",
+  "seed": 0,
+  "width": 1.0,
+  "data_frac": 1.0,
+  "step": 60000,
+  "size": null,
+  "arch": "hist3"
+ },
+ "n_train": 4096,
+ "n_test": 128,
+ "K": 4,
+ "by_d": {
+  "4": {
+   "err_left": 0.8413504123043509,
+   "val_nll": 0.3959317207336426,
+   "coverage95": 0.861572265625,
+   "regret_pred": 0.6196831138804555,
+   "regret_corr": 0.4917916748672724,
+   "regret_uncond4": 0.5264516109600663,
+   "regret_cond4": 0.39136580377817154,
+   "regret_noise": 0.0676427511498332
+  },
+  "8": {
+   "err_left": 0.8357062349257759,
+   "val_nll": 0.274557501077652,
+   "coverage95": 0.8532172309027778,
+   "regret_pred": 0.7420412702485919,
+   "regret_corr": 0.6615585777908564,
+   "regret_uncond4": 0.7733162119984627,
+   "regret_cond4": 0.7671416150406003,
+   "regret_noise": -0.013702401891350746
+  }
+ }
+}

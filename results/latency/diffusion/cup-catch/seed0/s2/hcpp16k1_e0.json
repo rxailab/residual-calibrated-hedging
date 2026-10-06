@@ -1,0 +1,73 @@
+{
+ "arm": "hcpp16k1",
+ "returns": [
+  0.0,
+  0.0,
+  0.0,
+  0.0,
+  0.0
+ ],
+ "return_mean": 0.0,
+ "episodes": 5,
+ "seeds": [
+  950000,
+  950004
+ ],
+ "decisions": 500,
+ "H": 32,
+ "n_calls": 32,
+ "t_plan_s": 2840.75497919973,
+ "t_plan_call_mean_s": 88.77359309999156,
+ "t_env_s": 10.390544140711427,
+ "t_wall_s": 2860.9165160655975,
+ "nonfinite_frac": 0.0,
+ "batch_size": 5,
+ "settings": {
+  "n_seg": 500,
+  "seg_blocks": 16,
+  "ctx": 4,
+  "h_plan": 8,
+  "n_pix": 200,
+  "n_roots": 60,
+  "m9_n": 200,
+  "m10_n": 12,
+  "m7_blocks": 2,
+  "steps": 2,
+  "ardiff": 2,
+  "cfg_scale": 1.0,
+  "micro_batch": 64,
+  "u1_episodes": 15,
+  "u1_first": 0,
+  "u1_T": 500,
+  "pop": 64,
+  "iters": 2,
+  "replan_blocks": 2,
+  "u2_seeds": 50,
+  "u2_H": 100
+ },
+ "config": {
+  "population": 64,
+  "iterations": 2,
+  "temperature": 0.5,
+  "init_std": 1.0,
+  "min_std": 0.05,
+  "momentum": 0.1,
+  "low": -1.0,
+  "high": 1.0
+ },
+ "meta": {
+  "family": "diffusion",
+  "run": "seed0",
+  "seed": 0,
+  "data_frac": 1.0,
+  "step": 32000,
+  "val_loss": 0.05426927772350609,
+  "task": "cup-catch"
+ },
+ "ckpt": "/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/diffusion/dmcontrol/seed0/step0032000.pt",
+ "gpu": "NVIDIA L40",
+ "git": "f2a4db00c1594b498233c344912d8af8e718024c",
+ "host": "gpu10",
+ "job": "24957707",
+ "written": "2026-10-05T21:10:42+01:00"
+}
