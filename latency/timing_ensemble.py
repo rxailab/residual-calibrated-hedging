@@ -66,6 +66,14 @@ def timed(make_cost, Z, cfg, d):
     return np.asarray(ts), int(torch.cuda.max_memory_allocated() - base)
 
 
+# global warm-up (CUDA context, kernels, allocator) before the first timed configuration
+_wp = PrefixMPPI(MPPIConfig(population=a.pop, iterations=6), torch.Generator(device=dev).manual_seed(0), dev)
+_wb = residual_bank(ads[0], a.task, 4)
+for _ in range(30):
+    _wp(make_cost_hedged(ads[0], a.pop, dev, True, 4, _wb, 1, H, batch_anchors=True)(Zs[0]),
+        torch.zeros((1, H, A), dtype=torch.float64, device=dev), torch.zeros((1, 4, A), dtype=torch.float64, device=dev))
+torch.cuda.synchronize()
+
 for d in (4, 8):
     banks = [residual_bank(ad, a.task, d) for ad in ads]
     configs = [("single_K1", 6, lambda: make_cost_hedged(ads[0], a.pop, dev, True, d, banks[0], 1, H, batch_anchors=True), Zs[0]),
