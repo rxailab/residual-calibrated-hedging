@@ -2,7 +2,8 @@
 (plan Section 14).  One family-task cell: its three member models.
 
 Times one committed-prefix call (prefix d, H free decisions) at batch size 1,
-10 warm-up and 50 timed calls, CUDA-synchronised, for
+CUDA-synchronised, 50 timed calls per configuration taken round-robin over the
+configurations in 5 rounds (2 warm-up calls per round), for
   single model:  K = 1 (committed prefix) and K = 4 (RCH, batched anchors);
   ensemble:      M = 3 members evaluated one after another, at 6 iterations
                  (same population and iterations) and at 2 iterations;
@@ -50,45 +51,53 @@ out = {"family": a.family, "task": a.task, "gpu": torch.cuda.get_device_name(0),
        "job": os.environ.get("SLURM_JOB_ID"), "members": weights, "results": []}
 
 
-def timed(make_cost, Z, cfg, d):
-    planner = PrefixMPPI(cfg, torch.Generator(device=dev).manual_seed(0), dev)
+def one_call(planner, make_cost, Z, d):
     warm = torch.zeros((1, H, A), dtype=torch.float64, device=dev)
     pre = torch.zeros((1, d, A), dtype=torch.float64, device=dev)
-    ts = []
+    torch.cuda.synchronize(); t0 = time.perf_counter()
+    mu = planner(make_cost(Z), warm, pre); mu[:, :d].float().cpu().numpy()
     torch.cuda.synchronize()
-    base = torch.cuda.memory_allocated(); torch.cuda.reset_peak_memory_stats()
-    for k in range(10 + a.calls):
-        torch.cuda.synchronize(); t0 = time.perf_counter()
-        mu = planner(make_cost(Z), warm, pre); mu[:, :d].float().cpu().numpy()
-        torch.cuda.synchronize()
-        if k >= 10:
-            ts.append(time.perf_counter() - t0)
-    return np.asarray(ts), int(torch.cuda.max_memory_allocated() - base)
+    return time.perf_counter() - t0
 
 
 # global warm-up (CUDA context, kernels, allocator) before the first timed configuration
 _wp = PrefixMPPI(MPPIConfig(population=a.pop, iterations=6), torch.Generator(device=dev).manual_seed(0), dev)
 _wb = residual_bank(ads[0], a.task, 4)
 for _ in range(30):
-    _wp(make_cost_hedged(ads[0], a.pop, dev, True, 4, _wb, 1, H, batch_anchors=True)(Zs[0]),
-        torch.zeros((1, H, A), dtype=torch.float64, device=dev), torch.zeros((1, 4, A), dtype=torch.float64, device=dev))
-torch.cuda.synchronize()
+    one_call(_wp, make_cost_hedged(ads[0], a.pop, dev, True, 4, _wb, 1, H, batch_anchors=True), Zs[0], 4)
 
+# Configurations are timed round-robin (ROUNDS rounds of calls/ROUNDS calls each, after 2 warm-up
+# calls per round), so drift or contention on a shared node affects all of them alike.
+ROUNDS = 5
 for d in (4, 8):
     banks = [residual_bank(ad, a.task, d) for ad in ads]
-    configs = [("single_K1", 6, lambda: make_cost_hedged(ads[0], a.pop, dev, True, d, banks[0], 1, H, batch_anchors=True), Zs[0]),
-               ("single_K4", 6, lambda: make_cost_hedged(ads[0], a.pop, dev, True, d, banks[0], 4, H, batch_anchors=True), Zs[0]),
-               ("ensemble_M3", 6, lambda: make_cost_ensemble(ads, a.pop, dev, True, d, H), Zs),
-               ("ensemble_M3", 2, lambda: make_cost_ensemble(ads, a.pop, dev, True, d, H), Zs),
-               ("ensemble_M3_K4", 6, lambda: make_cost_ensemble(ads, a.pop, dev, True, d, H, banks, 4, batch_anchors=True), Zs)]
+    configs = [("single_K1", 6, make_cost_hedged(ads[0], a.pop, dev, True, d, banks[0], 1, H, batch_anchors=True), Zs[0]),
+               ("single_K4", 6, make_cost_hedged(ads[0], a.pop, dev, True, d, banks[0], 4, H, batch_anchors=True), Zs[0]),
+               ("ensemble_M3", 6, make_cost_ensemble(ads, a.pop, dev, True, d, H), Zs),
+               ("ensemble_M3", 2, make_cost_ensemble(ads, a.pop, dev, True, d, H), Zs),
+               ("ensemble_M3_K4", 6, make_cost_ensemble(ads, a.pop, dev, True, d, H, banks, 4, batch_anchors=True), Zs)]
     if a.family == "rssm":
-        configs.append(("particles_K4", 6, lambda: make_cost_particles(ads[0], a.pop, dev, True, d, 4, H, batch_anchors=True), Zs[0]))
-    for name, iters, build, Z in configs:
-        ts, peak = timed(build(), Z, MPPIConfig(population=a.pop, iterations=iters), d)
-        out["results"].append({"config": name, "d": d, "pop": a.pop, "iters": iters, "L50_s": float(np.median(ts)),
-                               "L95_s": float(np.percentile(ts, 95)), "peak_extra_bytes": peak})
-        print(f"{a.family}/{a.task} d{d} {name} it{iters}: L50 {np.median(ts) * 1e3:.1f} ms "
-              f"L95 {np.percentile(ts, 95) * 1e3:.1f} ms, peak +{peak / 2 ** 20:.0f} MiB", flush=True)
+        configs.append(("particles_K4", 6, make_cost_particles(ads[0], a.pop, dev, True, d, 4, H, batch_anchors=True), Zs[0]))
+    planners = [PrefixMPPI(MPPIConfig(population=a.pop, iterations=it), torch.Generator(device=dev).manual_seed(0), dev)
+                for _, it, _, _ in configs]
+    peaks = []
+    for (name, it, mc, Z), pl in zip(configs, planners):        # peak memory above the weights, one call each
+        torch.cuda.synchronize(); base = torch.cuda.memory_allocated(); torch.cuda.reset_peak_memory_stats()
+        one_call(pl, mc, Z, d)
+        peaks.append(int(torch.cuda.max_memory_allocated() - base))
+    ts = [[] for _ in configs]
+    for r in range(ROUNDS):
+        for i, ((name, it, mc, Z), pl) in enumerate(zip(configs, planners)):
+            for k in range(2 + a.calls // ROUNDS):
+                t = one_call(pl, mc, Z, d)
+                if k >= 2:
+                    ts[i].append(t)
+    for (name, it, _, _), t, peak in zip(configs, ts, peaks):
+        t = np.asarray(t)
+        out["results"].append({"config": name, "d": d, "pop": a.pop, "iters": it, "L50_s": float(np.median(t)),
+                               "L95_s": float(np.percentile(t, 95)), "calls": len(t), "peak_extra_bytes": peak})
+        print(f"{a.family}/{a.task} d{d} {name} it{it}: L50 {np.median(t) * 1e3:.1f} ms "
+              f"L95 {np.percentile(t, 95) * 1e3:.1f} ms, peak +{peak / 2 ** 20:.0f} MiB", flush=True)
 
 # per-decision latent filtering at batch size 1: one member against all three
 act = np.zeros((1, A))
