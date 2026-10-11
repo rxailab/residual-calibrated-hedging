@@ -1,0 +1,136 @@
+{
+ "family": "tdmpc2",
+ "task": "cup-catch",
+ "gpu": "NVIDIA L40S",
+ "host": "gpu14",
+ "job": "25105777",
+ "members": [
+  {
+   "run": "seed0",
+   "params": 7761915,
+   "weight_bytes_gpu": 31052288
+  },
+  {
+   "run": "seed1",
+   "params": 7761915,
+   "weight_bytes_gpu": 32023040
+  },
+  {
+   "run": "seed2",
+   "params": 7761915,
+   "weight_bytes_gpu": 31052288
+  }
+ ],
+ "results": [
+  {
+   "config": "single_K1",
+   "d": 4,
+   "pop": 512,
+   "iters": 6,
+   "L50_s": 0.08269606297835708,
+   "L95_s": 0.09412587611004711,
+   "calls": 50,
+   "peak_extra_bytes": 10531840
+  },
+  {
+   "config": "single_K4",
+   "d": 4,
+   "pop": 512,
+   "iters": 6,
+   "L50_s": 0.0834322040900588,
+   "L95_s": 0.09514711229130626,
+   "calls": 50,
+   "peak_extra_bytes": 32519168
+  },
+  {
+   "config": "ensemble_M3",
+   "d": 4,
+   "pop": 512,
+   "iters": 6,
+   "L50_s": 0.23910170001909137,
+   "L95_s": 0.2717018010560423,
+   "calls": 50,
+   "peak_extra_bytes": 10533888
+  },
+  {
+   "config": "ensemble_M3",
+   "d": 4,
+   "pop": 512,
+   "iters": 2,
+   "L50_s": 0.08022512122988701,
+   "L95_s": 0.08970973277464508,
+   "calls": 50,
+   "peak_extra_bytes": 10533888
+  },
+  {
+   "config": "ensemble_M3_K4",
+   "d": 4,
+   "pop": 512,
+   "iters": 6,
+   "L50_s": 0.2424447019584477,
+   "L95_s": 0.2755936762783676,
+   "calls": 50,
+   "peak_extra_bytes": 32523264
+  },
+  {
+   "config": "single_K1",
+   "d": 8,
+   "pop": 512,
+   "iters": 6,
+   "L50_s": 0.08520526718348265,
+   "L95_s": 0.08618611819110811,
+   "calls": 50,
+   "peak_extra_bytes": 10564608
+  },
+  {
+   "config": "single_K4",
+   "d": 8,
+   "pop": 512,
+   "iters": 6,
+   "L50_s": 0.08576973527669907,
+   "L95_s": 0.08666672925464809,
+   "calls": 50,
+   "peak_extra_bytes": 32551936
+  },
+  {
+   "config": "ensemble_M3",
+   "d": 8,
+   "pop": 512,
+   "iters": 6,
+   "L50_s": 0.24771620519459248,
+   "L95_s": 0.2503992021549493,
+   "calls": 50,
+   "peak_extra_bytes": 10566656
+  },
+  {
+   "config": "ensemble_M3",
+   "d": 8,
+   "pop": 512,
+   "iters": 2,
+   "L50_s": 0.08263668417930603,
+   "L95_s": 0.08341864431276917,
+   "calls": 50,
+   "peak_extra_bytes": 10566656
+  },
+  {
+   "config": "ensemble_M3_K4",
+   "d": 8,
+   "pop": 512,
+   "iters": 6,
+   "L50_s": 0.25091731967404485,
+   "L95_s": 0.2535694044083357,
+   "calls": 50,
+   "peak_extra_bytes": 32556032
+  }
+ ],
+ "filter": {
+  "single": {
+   "L50_s": 0.0004635932855308056,
+   "L95_s": 0.0004750537686049938
+  },
+  "ensemble_M3": {
+   "L50_s": 0.001332093495875597,
+   "L95_s": 0.0013555314391851426
+  }
+ }
+}

@@ -77,6 +77,15 @@ def contrast(a, b, rng):
             "p_two_sided": p, "cells": len(diffs)}
 
 
+def combo(*terms):
+    """A loader for a signed sum of arms, terms = (sign, loader, cfg, arm); the
+    ensemble's (1, 50) arrays broadcast against the single models' (3, 50)."""
+    def load(c, *_):
+        xs = [t[1](c, *t[2:]) for t in terms]
+        return None if any(x is None for x in xs) else sum(t[0] * x for t, x in zip(terms, xs))
+    return load
+
+
 def level(loader, cfg, arm):
     """Equal-cell-weight mean normalised return of one arm."""
     xs = [loader(c, cfg, arm) for c in CELLS]
@@ -125,6 +134,33 @@ def main():
             ph[f"RCHit2_vs_RCHit6_d{d}"] = contrast((S, P2, f"hcpp{d}k4"), (S, P6, f"hcpp{d}k4"), rng2)
             ph[f"CPPit2_vs_CPPit6_d{d}"] = contrast((S, P2, f"hcpp{d}k1"), (S, P6, f"hcpp{d}k1"), rng2)
             ph[f"RCHit2_vs_CPPit2_d{d}"] = contrast((S, P2, f"hcpp{d}k4"), (S, P2, f"hcpp{d}k1"), rng2)
+    # second post-hoc check: the ensemble without delay, and each planner's mismatch loss against
+    # its own paused planner, M(d) = R(paused_d) - R(planner_d)
+    if level(E, P6, "enspaused1") and level(E, P6, "enspaused1")["cells"] == len(CELLS):
+        dec = out["decomposition"] = {}
+        ZERO = (lambda c, *_: np.zeros((1, 50)), None, None)          # contrast against 0: a level with its interval
+        dec["E_vs_single_paused1"] = contrast((E, P6, "enspaused1"), (S, P6, "paused1"), rng2)
+        dec["Elat_vs_single_paused1"] = contrast((E, P2, "enspaused1"), (S, P6, "paused1"), rng2)
+        for d in (4, 8):
+            dec[f"levels_d{d}"] = {k: level(*v) for k, v in {
+                "single paused1": (S, P6, "paused1"), f"single paused{d}": (S, P6, f"paused{d}"),
+                "E paused1": (E, P6, "enspaused1"), f"E paused{d}": (E, P6, f"enspaused{d}"),
+                "E-lat paused1": (E, P2, "enspaused1"), f"E-lat paused{d}": (E, P2, f"enspaused{d}")}.items()}
+            dec[f"E_vs_single_paused{d}"] = contrast((E, P6, f"enspaused{d}"), (S, P6, f"paused{d}"), rng2)
+            M = {"CPP": combo((1, S, P6, f"paused{d}"), (-1, S, P6, f"hcpp{d}k1")),
+                 "RCH": combo((1, S, P6, f"paused{d}"), (-1, S, P6, f"hcpp{d}k4")),
+                 "E-pop": combo((1, E, P6, f"enspaused{d}"), (-1, E, P6, f"ens{d}")),
+                 "E-lat": combo((1, E, P2, f"enspaused{d}"), (-1, E, P2, f"ens{d}")),
+                 "E+RCH": combo((1, E, P6, f"enspaused{d}"), (-1, E, P6, f"ens{d}k4"))}
+            for k, f in M.items():
+                dec[f"M_{k}_d{d}"] = contrast((f, None, None), ZERO, rng2)
+            Fs = {"single": combo((1, S, P6, "paused1"), (-1, S, P6, f"paused{d}")),
+                  "E": combo((1, E, P6, "enspaused1"), (-1, E, P6, f"enspaused{d}"))}
+            for k, f in Fs.items():
+                dec[f"F_{k}_d{d}"] = contrast((f, None, None), ZERO, rng2)
+            dec[f"M_RCH_minus_M_Epop_d{d}"] = contrast((M["RCH"], None, None), (M["E-pop"], None, None), rng2)
+            dec[f"M_RCH_minus_M_Elat_d{d}"] = contrast((M["RCH"], None, None), (M["E-lat"], None, None), rng2)
+            dec[f"M_CPP_minus_M_Epop_d{d}"] = contrast((M["CPP"], None, None), (M["E-pop"], None, None), rng2)
     tim = {}
     for f in sorted((RESULTS / "latency" / "timing_ensemble").glob("*/*.json")):
         tim[f"{f.parent.name}/{f.stem}"] = json.load(open(f))
@@ -133,9 +169,11 @@ def main():
     for d, lv in out["levels"].items():
         print(d, "  ".join(f"{k} {v['mean']:.3f} ({v['cells']})" for k, v in lv.items() if v))
     print("RSSM only", out["levels_rssm"])
-    for sect in ("primary", "secondary", "posthoc"):
+    for sect in ("primary", "secondary", "posthoc", "decomposition"):
         print(sect)
-        for k, v in out[sect].items():
+        for k, v in out.get(sect, {}).items():
+            if "est" not in v:
+                print(f"  {k}: " + "  ".join(f"{a} {b['mean']:.3f}" for a, b in v.items() if b)); continue
             ph = f", Holm p = {v['p_holm']:.4f}" if "p_holm" in v else ""
             print(f"  {k:24s} {v['est']:+.3f} [{v['ci95'][0]:+.3f}, {v['ci95'][1]:+.3f}]  two-sided p = "
                   f"{v['p_two_sided']:.4f}{ph}  ({v['cells']} cells)")

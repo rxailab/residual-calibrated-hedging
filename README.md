@@ -34,16 +34,16 @@ Residual-calibrated hedging (RCH) scores each candidate over several post-delay 
 | `timing.py`, `timing_hedge.py`, `timing_ensemble.py` | Latency measurements (`timing_ensemble.py` also records memory and parameters) |
 | `wallclock.py` | The real-time check |
 | `diagnose_anchor.py`, `error_model.py` | Offline diagnostics |
-| `analyse*.py`, `select_lambda.py` | Pre-registered analyses |
+| `analyse*.py`, `select_lambda.py` | Pre-registered analyses (`analyse_ensemble.py`: the ensemble and particle baselines) |
 | `runs_*.txt` | The run lists that were executed |
 
 ## Build the paper
 
 ```bash
-tectonic -X compile --outdir build main.tex
+tectonic -X compile -Z search-path=.. --outdir build main.tex
 ```
 
-Run it from `paper/ncomms/`. On the HEC cluster, tectonic is `/mmfs1/storage/users/xiar3/envs/texenv/bin/tectonic`.
+Run it from `paper/ncomms/`. The manuscript includes `figures/*.pdf`, which `-Z search-path=..` finds in `paper/figures/`. On the HEC cluster, tectonic is `/mmfs1/storage/users/xiar3/envs/texenv/bin/tectonic`.
 
 Regenerate a figure from `paper/` (the env is a venv with cairosvg and Pillow):
 
@@ -78,4 +78,4 @@ The first command is the CPU exactness check. The second runs Study 1 (delay swe
 
 ## Status
 
-The manuscript is complete. Author details still to fill in: archive and code DOIs, funding and the CRediT statement.
+The manuscript is complete, including the comparison with DATS-style ensemble hedging (11 October 2026; `latency/ensemble.py`, `results/latency/ensemble.json`). Still to fill in: archive and code DOIs.

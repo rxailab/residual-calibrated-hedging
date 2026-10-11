@@ -423,3 +423,57 @@ The proposed method (`latency/delay_error.py`) is:
   - the ensemble's own feedback-rate and mismatch losses, F_E(d) = R_E(paused1) - R_E(paused_d) and M_E(d) = R_E(paused_d) - R_E(ens_d);
   - the share of each planner's mismatch loss that it removes.
 - Post-hoc, with no correction.
+
+**Post-hoc results (11 October 2026; `results/latency/ensemble.json`, sections `posthoc` and `decomposition`).**
+
+*Iteration count* does not explain the latency-matched result:
+
+| Contrast | d = 4 | d = 8 |
+|---|---|---|
+| RCH at 2 vs 6 iterations | -0.003 [-0.019, +0.012] | -0.005 [-0.024, +0.013] |
+| CPP at 2 vs 6 iterations | +0.008 [-0.008, +0.025] | +0.004 [-0.016, +0.024] |
+| RCH (2 iterations) vs E-lat | -0.045 [-0.070, -0.022] | -0.031 [-0.055, -0.006] |
+
+*Decomposition.* The ensemble is better without delay: E-paused1 vs the single models' paused1 is +0.066 [+0.033, +0.099]. Its gain under delay (+0.046, +0.045 over CPP) is no larger.
+
+Mismatch loss, R(paused_d) - R(planner_d), each against its own paused planner:
+
+| Planner | d = 4 | d = 8 |
+|---|---|---|
+| CPP | 0.076 | 0.098 |
+| RCH | 0.054 | 0.061 |
+| E-pop | 0.076 | 0.111 |
+| E-lat | 0.068 | 0.103 |
+| E+RCH | 0.079 | 0.078 |
+
+Differences in mismatch loss:
+
+| Contrast | d = 4 | d = 8 |
+|---|---|---|
+| M_CPP - M_E-pop | -0.000 [-0.023, +0.023] | -0.012 [-0.036, +0.011] |
+| M_RCH - M_E-pop | -0.022 [-0.049, +0.004] | -0.049 [-0.075, -0.024] |
+| M_RCH - M_E-lat | -0.015 [-0.040, +0.010] | -0.041 [-0.067, -0.015] |
+
+- The ensemble's lead is model quality (averaging three models), present with or without delay. Its committed-prefix planner loses as much to mismatch as a single model's.
+- RCH is the planner that reduces mismatch loss. On the ensemble, it does so at d = 8 (E+RCH).
+
+**Timing (job 25105777, L40S, round-robin; `results/latency/timing_ensemble/l40s/`).**
+
+- Call latency at d = 4:
+  - one model, CPP or RCH: 83-103 ms;
+  - ensemble at 6 iterations: 239-299 ms (2.9x);
+  - ensemble at 2 iterations: 80-100 ms;
+  - ensemble + RCH: 242-303 ms;
+  - particles (RSSM): 107 ms.
+- Peak planning memory above the weights: 10-18 MiB for one model or the ensemble, 28-46 MiB with four anchors.
+- Weights per member: 13-35 MiB.
+- Filtering per decision: 0.46-0.77 ms for one model, 1.33-2.23 ms for three.
+- The first timing run (job 25104721) timed the configurations one after another and showed drift (K = 1 slower than K = 4); its files are kept in scratch, `runs/timing_ensemble_v1`.
+
+**Compute used:** 13.2 GPU-hours. Ensemble 4.7, particles 1.5, RCH at 2 iterations 2.2, paused ensemble 4.3, timing and smoke test 0.4.
+
+**Manuscript (11 October 2026):**
+
+- New Results subsection, "An ensemble improves the model, and residual hedging the handling of delay", with Tables 7 and 8.
+- Methods subsection "Ensemble and particle baselines"; pre-registration entry; statistics, compute and a recipe step.
+- Abstract, Introduction and Discussion revised.

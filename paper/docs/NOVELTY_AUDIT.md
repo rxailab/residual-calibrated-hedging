@@ -95,3 +95,27 @@ The method idea itself is a variant of DATS-style hedging. Before any submission
 5. The wall-clock finding: the delay must cover the whole loop.
 
 The method claim is now "residual-calibrated hedging for learned world models, building on CLIS-MPPI". The manuscript credits CLIS-MPPI in the Introduction, the contributions list and the Discussion (6 October 2026).
+
+---
+
+## Addendum (11 October 2026): DATS-style ensemble comparison done
+
+**Why.** The outstanding check above, also raised in reviewer feedback on the manuscript.
+
+**Design** (`EXPERIMENT_PLAN_SIDE.md` Section 14, pre-registered). DATS-style ensemble hedging uses the three independently trained models of each cell. Each member keeps its own particle (TS-inf), because the members' latent spaces differ. Candidate costs are averaged over members. The ensemble ran at matched population and at matched batch-1 latency. Also run: particle anchors from the RSSM's own stochastic transition, and ensemble + RCH.
+
+**Result.**
+
+1. **Pre-registered:** RCH is below the latency-matched ensemble at d = 4 (-0.042, Holm p = 0.0008). The other three differences favour the ensemble, with intervals including zero.
+2. **Post hoc:** the ensemble's lead is present without delay (+0.066 paused), and its mismatch loss equals single-model committed-prefix planning's. RCH reduces mismatch loss, and adds to the ensemble at d = 8 (+0.033).
+3. **Particle anchors** on the stochastic RSSM match or beat RCH. Sampling the model's own transition is an alternative hedge source for stochastic models.
+
+**Consequence for the claims.**
+
+- RCH is not claimed to beat ensemble hedging on return.
+- The distinct claims that remain:
+  1. Hedging for a single, possibly deterministic, pretrained world model, with no extra training.
+  2. It is the component that reduces the delay-specific mismatch loss.
+  3. It combines with an ensemble at the longer delay.
+- The ensemble's costs: 3x training, weights and filtering; 2.9x call latency at matched population.
+- The manuscript states the ensemble result in the abstract, Results, Discussion and Methods.

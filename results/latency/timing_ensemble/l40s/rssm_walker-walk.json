@@ -1,0 +1,156 @@
+{
+ "family": "rssm",
+ "task": "walker-walk",
+ "gpu": "NVIDIA L40S",
+ "host": "gpu14",
+ "job": "25105777",
+ "members": [
+  {
+   "run": "seed0",
+   "params": 9252037,
+   "weight_bytes_gpu": 37014016
+  },
+  {
+   "run": "seed1",
+   "params": 9252037,
+   "weight_bytes_gpu": 37800448
+  },
+  {
+   "run": "seed2",
+   "params": 9252037,
+   "weight_bytes_gpu": 37014016
+  }
+ ],
+ "results": [
+  {
+   "config": "single_K1",
+   "d": 4,
+   "pop": 512,
+   "iters": 6,
+   "L50_s": 0.10257583251222968,
+   "L95_s": 0.11676607588306069,
+   "calls": 50,
+   "peak_extra_bytes": 19025920
+  },
+  {
+   "config": "single_K4",
+   "d": 4,
+   "pop": 512,
+   "iters": 6,
+   "L50_s": 0.10302476724609733,
+   "L95_s": 0.11758535872213542,
+   "calls": 50,
+   "peak_extra_bytes": 48371712
+  },
+  {
+   "config": "ensemble_M3",
+   "d": 4,
+   "pop": 512,
+   "iters": 6,
+   "L50_s": 0.298923815600574,
+   "L95_s": 0.34004502729512753,
+   "calls": 50,
+   "peak_extra_bytes": 19027456
+  },
+  {
+   "config": "ensemble_M3",
+   "d": 4,
+   "pop": 512,
+   "iters": 2,
+   "L50_s": 0.10010675806552172,
+   "L95_s": 0.11213150010444224,
+   "calls": 50,
+   "peak_extra_bytes": 19027456
+  },
+  {
+   "config": "ensemble_M3_K4",
+   "d": 4,
+   "pop": 512,
+   "iters": 6,
+   "L50_s": 0.3024597014300525,
+   "L95_s": 0.342661506915465,
+   "calls": 50,
+   "peak_extra_bytes": 48375808
+  },
+  {
+   "config": "particles_K4",
+   "d": 4,
+   "pop": 512,
+   "iters": 6,
+   "L50_s": 0.10650530504062772,
+   "L95_s": 0.10751972305588424,
+   "calls": 50,
+   "peak_extra_bytes": 48365568
+  },
+  {
+   "config": "single_K1",
+   "d": 8,
+   "pop": 512,
+   "iters": 6,
+   "L50_s": 0.10597340948879719,
+   "L95_s": 0.10639647655189037,
+   "calls": 50,
+   "peak_extra_bytes": 18075648
+  },
+  {
+   "config": "single_K4",
+   "d": 8,
+   "pop": 512,
+   "iters": 6,
+   "L50_s": 0.10614995518699288,
+   "L95_s": 0.10653207087889313,
+   "calls": 50,
+   "peak_extra_bytes": 48535552
+  },
+  {
+   "config": "ensemble_M3",
+   "d": 8,
+   "pop": 512,
+   "iters": 6,
+   "L50_s": 0.3095391923561692,
+   "L95_s": 0.3125711014959961,
+   "calls": 50,
+   "peak_extra_bytes": 18077184
+  },
+  {
+   "config": "ensemble_M3",
+   "d": 8,
+   "pop": 512,
+   "iters": 2,
+   "L50_s": 0.10342780640348792,
+   "L95_s": 0.10462189153768123,
+   "calls": 50,
+   "peak_extra_bytes": 18077184
+  },
+  {
+   "config": "ensemble_M3_K4",
+   "d": 8,
+   "pop": 512,
+   "iters": 6,
+   "L50_s": 0.31203052680939436,
+   "L95_s": 0.31480340706184506,
+   "calls": 50,
+   "peak_extra_bytes": 48539648
+  },
+  {
+   "config": "particles_K4",
+   "d": 8,
+   "pop": 512,
+   "iters": 6,
+   "L50_s": 0.11333385901525617,
+   "L95_s": 0.11376571538858116,
+   "calls": 50,
+   "peak_extra_bytes": 48529408
+  }
+ ],
+ "filter": {
+  "single": {
+   "L50_s": 0.0007686731405556202,
+   "L95_s": 0.0007890575099736453
+  },
+  "ensemble_M3": {
+   "L50_s": 0.002234609331935644,
+   "L95_s": 0.0022638834547251464
+  }
+ }
+}
