@@ -29,8 +29,9 @@ Residual-calibrated hedging (RCH) scores each candidate over several post-delay 
 | `schedule.py` | Planning schedules (paused, naive, time-aligned, committed-prefix) and `PrefixMPPI` |
 | `hedge.py` | Residual-calibrated hedging |
 | `delay_error.py` | The learned delay-error model and the ablations |
+| `ensemble.py` | Baselines: DATS-style ensemble hedging over the three seed models of a cell, and particle anchors from the RSSM's stochastic transition |
 | `run_dmc.py`, `run_diffusion.py` | Closed-loop drivers |
-| `timing.py`, `timing_hedge.py` | Latency measurements |
+| `timing.py`, `timing_hedge.py`, `timing_ensemble.py` | Latency measurements (`timing_ensemble.py` also records memory and parameters) |
 | `wallclock.py` | The real-time check |
 | `diagnose_anchor.py`, `error_model.py` | Offline diagnostics |
 | `analyse*.py`, `select_lambda.py` | Pre-registered analyses |

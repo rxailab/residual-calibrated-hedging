@@ -389,3 +389,28 @@ The proposed method (`latency/delay_error.py`) is:
 - Smoke test: job 25104146.
 - Arrays: `sbatch --array=0-15 --export=ALL,LINES=latency/runs_ensemble.txt slurm/latency_ens.sh`; `sbatch --array=0-8 --export=ALL,LINES=latency/runs_particle.txt slurm/latency_dmc.sh`.
 - Timing: `sbatch slurm/latency_timing_ens.sh`.
+
+**Section 14 primary result (11 October 2026; `results/latency/ensemble.json`).**
+
+| Contrast | d = 4 | d = 8 |
+|---|---|---|
+| RCH vs E-pop | -0.023 [-0.051, +0.002], Holm p = 0.21 | -0.008 [-0.038, +0.021], Holm p = 0.60 |
+| RCH vs E-lat | -0.042 [-0.070, -0.016], Holm p = 0.0008 | -0.026 [-0.057, +0.004], Holm p = 0.21 |
+
+- Under the pre-specified reading, the three-model ensemble beats RCH at matched latency at d = 4.
+- Against the ensemble at matched population, RCH is lower at both delays, but neither interval excludes zero.
+- Secondary:
+  - E-pop vs CPP: +0.046 and +0.045.
+  - E-lat vs CPP: +0.064 and +0.063.
+  - E+RCH vs E-pop: -0.003 and +0.033.
+  - E+RCH vs RCH: +0.021 and +0.041.
+  - Particles vs RCH (RSSM): +0.020 and -0.000.
+
+**Post-hoc check, written after the primary result and before its runs.** E-lat (2 iterations) scored above E-pop (6 iterations), so iteration count may confound the latency-matched contrast.
+
+- In Study 2, the seed-0 models show no consistent effect for single-model committed-prefix planning: 0.366 vs 0.367 at d = 4 and 0.284 vs 0.275 at d = 8, for 2 vs 6 iterations.
+- To settle it, `hcpp{d}k1` and `hcpp{d}k4` are run at population 512 and 2 iterations on the 24 models, for d in {4, 8} (`latency/runs_hedge_it2.txt`).
+- This is reported as post-hoc, with no correction. Contrasts:
+  - RCH(it2) vs E-lat;
+  - RCH(it2) vs RCH(it6);
+  - CPP(it2) vs CPP(it6).
