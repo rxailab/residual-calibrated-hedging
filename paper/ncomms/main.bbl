@@ -1,0 +1,552 @@
+\begin{thebibliography}{10}
+\expandafter\ifx\csname url\endcsname\relax
+  \def\url#1{\burl{#1}}\fi
+\expandafter\ifx\csname urlprefix\endcsname\relax\def\urlprefix{URL }\fi
+\providecommand{\bibinfo}[2]{#2}
+\providecommand{\eprint}[2][]{\url{#2}}
+\providecommand{\doi}[1]{\url{https://doi.org/#1}}
+\bibcommenthead
+
+\bibitem{ha2018world}
+\bibinfo{author}{Ha, D.} \& \bibinfo{author}{Schmidhuber, J.}
+\newblock \bibinfo{title}{Recurrent world models facilitate policy evolution}.
+\newblock \emph{\bibinfo{journal}{Advances in Neural Information Processing
+  Systems}} \textbf{\bibinfo{volume}{31}}, \bibinfo{pages}{2451--2463}
+  (\bibinfo{year}{2018}).
+
+\bibitem{finn2017foresight}
+\bibinfo{author}{Finn, C.} \& \bibinfo{author}{Levine, S.}
+\newblock \bibinfo{title}{Deep visual foresight for planning robot motion}.
+\newblock \emph{\bibinfo{journal}{IEEE International Conference on Robotics and
+  Automation (ICRA)}} \bibinfo{pages}{2786--2793} (\bibinfo{year}{2017}).
+
+\bibitem{mayne2000constrained}
+\bibinfo{author}{Mayne, D.~Q.}, \bibinfo{author}{Rawlings, J.~B.},
+  \bibinfo{author}{Rao, C.~V.} \& \bibinfo{author}{Scokaert, P. O.~M.}
+\newblock \bibinfo{title}{Constrained model predictive control: Stability and
+  optimality}.
+\newblock \emph{\bibinfo{journal}{Automatica}} \textbf{\bibinfo{volume}{36}},
+  \bibinfo{pages}{789--814} (\bibinfo{year}{2000}).
+
+\bibitem{rawlings2017mpc}
+\bibinfo{author}{Rawlings, J.~B.}, \bibinfo{author}{Mayne, D.~Q.} \&
+  \bibinfo{author}{Diehl, M.~M.}
+\newblock \emph{\bibinfo{title}{Model Predictive Control: Theory, Computation,
+  and Design}} \bibinfo{edition}{2nd} edn (\bibinfo{publisher}{Nob Hill
+  Publishing}, \bibinfo{year}{2017}).
+
+\bibitem{williams2016aggressive}
+\bibinfo{author}{Williams, G.}, \bibinfo{author}{Drews, P.},
+  \bibinfo{author}{Goldfain, B.}, \bibinfo{author}{Rehg, J.~M.} \&
+  \bibinfo{author}{Theodorou, E.~A.}
+\newblock \bibinfo{title}{Aggressive driving with model predictive path
+  integral control}.
+\newblock \emph{\bibinfo{journal}{IEEE International Conference on Robotics and
+  Automation (ICRA)}} \bibinfo{pages}{1433--1440} (\bibinfo{year}{2016}).
+
+\bibitem{williams2017mppi}
+\bibinfo{author}{Williams, G.}, \bibinfo{author}{Drews, P.},
+  \bibinfo{author}{Goldfain, B.}, \bibinfo{author}{Rehg, J.~M.} \&
+  \bibinfo{author}{Theodorou, E.~A.}
+\newblock \bibinfo{title}{Information-theoretic model predictive control:
+  Theory and applications to autonomous driving}.
+\newblock \emph{\bibinfo{journal}{IEEE Transactions on Robotics}}
+  \textbf{\bibinfo{volume}{34}}, \bibinfo{pages}{1603--1622}
+  (\bibinfo{year}{2018}).
+
+\bibitem{rubinstein1999cem}
+\bibinfo{author}{Rubinstein, R.}
+\newblock \bibinfo{title}{The cross-entropy method for combinatorial and
+  continuous optimization}.
+\newblock \emph{\bibinfo{journal}{Methodology and Computing in Applied
+  Probability}} \textbf{\bibinfo{volume}{1}}, \bibinfo{pages}{127--190}
+  (\bibinfo{year}{1999}).
+
+\bibitem{pinneri2020icem}
+\bibinfo{author}{Pinneri, C.} \emph{et~al.}
+\newblock \bibinfo{title}{Sample-efficient cross-entropy method for real-time
+  planning}.
+\newblock \emph{\bibinfo{journal}{Proceedings of the 2020 Conference on Robot
+  Learning, PMLR}} \textbf{\bibinfo{volume}{155}}, \bibinfo{pages}{1049--1065}
+  (\bibinfo{year}{2021}).
+
+\bibitem{hafner2019planet}
+\bibinfo{author}{Hafner, D.} \emph{et~al.}
+\newblock \bibinfo{title}{Learning latent dynamics for planning from pixels}.
+\newblock \emph{\bibinfo{journal}{Proceedings of the 36th International
+  Conference on Machine Learning, PMLR}} \textbf{\bibinfo{volume}{97}},
+  \bibinfo{pages}{2555--2565} (\bibinfo{year}{2019}).
+
+\bibitem{chua2018pets}
+\bibinfo{author}{Chua, K.}, \bibinfo{author}{Calandra, R.},
+  \bibinfo{author}{McAllister, R.} \& \bibinfo{author}{Levine, S.}
+\newblock \bibinfo{title}{Deep reinforcement learning in a handful of trials
+  using probabilistic dynamics models}.
+\newblock \emph{\bibinfo{journal}{Advances in Neural Information Processing
+  Systems}} \textbf{\bibinfo{volume}{31}} (\bibinfo{year}{2018}).
+
+\bibitem{hansen2022tdmpc}
+\bibinfo{author}{Hansen, N.}, \bibinfo{author}{Su, H.} \&
+  \bibinfo{author}{Wang, X.}
+\newblock \bibinfo{title}{Temporal difference learning for model predictive
+  control}.
+\newblock \emph{\bibinfo{journal}{Proceedings of the 39th International
+  Conference on Machine Learning, PMLR}} \textbf{\bibinfo{volume}{162}},
+  \bibinfo{pages}{8387--8406} (\bibinfo{year}{2022}).
+
+\bibitem{hansen2023tdmpc2}
+\bibinfo{author}{Hansen, N.}, \bibinfo{author}{Su, H.} \&
+  \bibinfo{author}{Wang, X.}
+\newblock \bibinfo{title}{{TD-MPC2}: Scalable, robust world models for
+  continuous control}.
+\newblock \emph{\bibinfo{journal}{International Conference on Learning
+  Representations (ICLR)}} \bibinfo{pages}{47376--47405}
+  (\bibinfo{year}{2024}).
+
+\bibitem{schrittwieser2020muzero}
+\bibinfo{author}{Schrittwieser, J.} \emph{et~al.}
+\newblock \bibinfo{title}{Mastering {Atari}, {Go}, {Chess} and {Shogi} by
+  planning with a learned model}.
+\newblock \emph{\bibinfo{journal}{Nature}} \textbf{\bibinfo{volume}{588}},
+  \bibinfo{pages}{604--609} (\bibinfo{year}{2020}).
+
+\bibitem{hafner2020dreamer}
+\bibinfo{author}{Hafner, D.}, \bibinfo{author}{Lillicrap, T.},
+  \bibinfo{author}{Ba, J.} \& \bibinfo{author}{Norouzi, M.}
+\newblock \bibinfo{title}{Dream to control: Learning behaviors by latent
+  imagination}.
+\newblock \emph{\bibinfo{journal}{International Conference on Learning
+  Representations (ICLR)}}  (\bibinfo{year}{2020}).
+
+\bibitem{hafner2023dreamerv3}
+\bibinfo{author}{Hafner, D.}, \bibinfo{author}{Pasukonis, J.},
+  \bibinfo{author}{Ba, J.} \& \bibinfo{author}{Lillicrap, T.}
+\newblock \bibinfo{title}{Mastering diverse control tasks through world
+  models}.
+\newblock \emph{\bibinfo{journal}{Nature}} \textbf{\bibinfo{volume}{640}},
+  \bibinfo{pages}{647--653} (\bibinfo{year}{2025}).
+
+\bibitem{maes2026lewm}
+\bibinfo{author}{Maes, L.}, \bibinfo{author}{Le~Lidec, Q.},
+  \bibinfo{author}{Scieur, D.}, \bibinfo{author}{LeCun, Y.} \&
+  \bibinfo{author}{Balestriero, R.}
+\newblock \bibinfo{title}{{LeWorldModel}: Stable end-to-end joint-embedding
+  predictive architecture from pixels}.
+\newblock \emph{\bibinfo{journal}{arXiv preprint arXiv:2603.19312}}
+  (\bibinfo{year}{2026}).
+
+\bibitem{zhou2024dinowm}
+\bibinfo{author}{Zhou, G.}, \bibinfo{author}{Pan, H.}, \bibinfo{author}{LeCun,
+  Y.} \& \bibinfo{author}{Pinto, L.}
+\newblock \bibinfo{title}{{DINO-WM}: World models on pre-trained visual
+  features enable zero-shot planning}.
+\newblock \emph{\bibinfo{journal}{Proceedings of the 42nd International
+  Conference on Machine Learning, PMLR}} \textbf{\bibinfo{volume}{267}},
+  \bibinfo{pages}{79115--79135} (\bibinfo{year}{2025}).
+
+\bibitem{zhao2026miniworld}
+\bibinfo{author}{Zhao, Y.} \emph{et~al.}
+\newblock \bibinfo{title}{{MiniWorld}: Democratizing the training of video
+  world models from scratch}.
+\newblock \emph{\bibinfo{journal}{arXiv preprint arXiv:2608.01127}}
+  (\bibinfo{year}{2026}).
+
+\bibitem{wu2024ivideogpt}
+\bibinfo{author}{Wu, J.} \emph{et~al.}
+\newblock \bibinfo{title}{{iVideoGPT}: Interactive {VideoGPTs} are scalable
+  world models}.
+\newblock \emph{\bibinfo{journal}{Advances in Neural Information Processing
+  Systems}} \textbf{\bibinfo{volume}{37}}, \bibinfo{pages}{68082--68119}
+  (\bibinfo{year}{2024}).
+
+\bibitem{alonso2024diamond}
+\bibinfo{author}{Alonso, E.} \emph{et~al.}
+\newblock \bibinfo{title}{Diffusion for world modeling: Visual details matter
+  in {Atari}}.
+\newblock \emph{\bibinfo{journal}{Advances in Neural Information Processing
+  Systems}} \textbf{\bibinfo{volume}{37}}, \bibinfo{pages}{58757--58791}
+  (\bibinfo{year}{2024}).
+
+\bibitem{nvidia2025cosmos}
+\bibinfo{author}{{NVIDIA}}.
+\newblock \bibinfo{title}{Cosmos world foundation model platform for physical
+  {AI}}.
+\newblock \emph{\bibinfo{journal}{arXiv preprint arXiv:2501.03575}}
+  (\bibinfo{year}{2025}).
+
+\bibitem{katsikopoulos2003delays}
+\bibinfo{author}{Katsikopoulos, K.~V.} \& \bibinfo{author}{Engelbrecht, S.~E.}
+\newblock \bibinfo{title}{Markov decision processes with delays and
+  asynchronous cost collection}.
+\newblock \emph{\bibinfo{journal}{IEEE Transactions on Automatic Control}}
+  \textbf{\bibinfo{volume}{48}}, \bibinfo{pages}{568--574}
+  (\bibinfo{year}{2003}).
+
+\bibitem{ramstedt2019rtrl}
+\bibinfo{author}{Ramstedt, S.} \& \bibinfo{author}{Pal, C.}
+\newblock \bibinfo{title}{Real-time reinforcement learning}.
+\newblock \emph{\bibinfo{journal}{Advances in Neural Information Processing
+  Systems}} \textbf{\bibinfo{volume}{32}} (\bibinfo{year}{2019}).
+
+\bibitem{xiao2020thinking}
+\bibinfo{author}{Xiao, T.} \emph{et~al.}
+\newblock \bibinfo{title}{Thinking while moving: Deep reinforcement learning
+  with concurrent control}.
+\newblock \emph{\bibinfo{journal}{International Conference on Learning
+  Representations (ICLR)}}  (\bibinfo{year}{2020}).
+
+\bibitem{ramstedt2020random}
+\bibinfo{author}{Bouteiller, Y.}, \bibinfo{author}{Ramstedt, S.},
+  \bibinfo{author}{Beltrame, G.}, \bibinfo{author}{Pal, C.} \&
+  \bibinfo{author}{Binas, J.}
+\newblock \bibinfo{title}{Reinforcement learning with random delays}.
+\newblock \emph{\bibinfo{journal}{International Conference on Learning
+  Representations (ICLR)}}  (\bibinfo{year}{2021}).
+
+\bibitem{riemer2024staggered}
+\bibinfo{author}{Riemer, M.}, \bibinfo{author}{Subbaraj, G.},
+  \bibinfo{author}{Berseth, G.} \& \bibinfo{author}{Rish, I.}
+\newblock \bibinfo{title}{Enabling realtime reinforcement learning at scale
+  with staggered asynchronous inference}.
+\newblock \emph{\bibinfo{journal}{International Conference on Learning
+  Representations (ICLR)}} \bibinfo{pages}{39073--39098}
+  (\bibinfo{year}{2025}).
+
+\bibitem{thodoroff2022benchmarking}
+\bibinfo{author}{Thodoroff, P.}, \bibinfo{author}{Li, W.} \&
+  \bibinfo{author}{Lawrence, N.~D.}
+\newblock \bibinfo{title}{Benchmarking real-time reinforcement learning}.
+\newblock \emph{\bibinfo{journal}{Proceedings of Machine Learning Research}}
+  \textbf{\bibinfo{volume}{181}}, \bibinfo{pages}{26--41}
+  (\bibinfo{year}{2022}).
+
+\bibitem{smith1957dead}
+\bibinfo{author}{Smith, O. J.~M.}
+\newblock \bibinfo{title}{Closer control of loops with dead time}.
+\newblock \emph{\bibinfo{journal}{Chemical Engineering Progress}}
+  \textbf{\bibinfo{volume}{53}}, \bibinfo{pages}{217--219}
+  (\bibinfo{year}{1957}).
+
+\bibitem{findeisen2004computational}
+\bibinfo{author}{Findeisen, R.} \& \bibinfo{author}{Allg{\"o}wer, F.}
+\newblock \bibinfo{title}{Computational delay in nonlinear model predictive
+  control}.
+\newblock \emph{\bibinfo{journal}{IFAC Proceedings Volumes}}
+  \textbf{\bibinfo{volume}{37}}, \bibinfo{pages}{427--432}
+  (\bibinfo{year}{2004}).
+
+\bibitem{dirckx2024asap}
+\bibinfo{author}{Dirckx, D.} \emph{et~al.}
+\newblock \bibinfo{title}{{ASAP-MPC}: An asynchronous update scheme for online
+  motion planning with nonlinear model predictive control}.
+\newblock \emph{\bibinfo{journal}{Autonomous Robots}}
+  \textbf{\bibinfo{volume}{49}}, \bibinfo{pages}{8} (\bibinfo{year}{2025}).
+
+\bibitem{chen2020dats}
+\bibinfo{author}{Chen, B.}, \bibinfo{author}{Xu, M.}, \bibinfo{author}{Li, L.}
+  \& \bibinfo{author}{Zhao, D.}
+\newblock \bibinfo{title}{Delay-aware model-based reinforcement learning for
+  continuous control}.
+\newblock \emph{\bibinfo{journal}{Neurocomputing}}
+  \textbf{\bibinfo{volume}{450}}, \bibinfo{pages}{119--128}
+  (\bibinfo{year}{2021}).
+
+\bibitem{karamzade2025random}
+\bibinfo{author}{Karamzade, A.}, \bibinfo{author}{Kim, K.},
+  \bibinfo{author}{Lanier, J.}, \bibinfo{author}{Corsi, D.} \&
+  \bibinfo{author}{Fox, R.}
+\newblock \bibinfo{title}{Model-based reinforcement learning under random
+  observation delays}.
+\newblock \emph{\bibinfo{journal}{Proceedings of the 8th Annual Learning for
+  Dynamics and Control Conference, PMLR}} \textbf{\bibinfo{volume}{331}},
+  \bibinfo{pages}{98--116} (\bibinfo{year}{2026}).
+
+\bibitem{elasri2025rthcp}
+\bibinfo{author}{El~Asri, Z.}, \bibinfo{author}{Laiche, I.},
+  \bibinfo{author}{Rambour, C.}, \bibinfo{author}{Sigaud, O.} \&
+  \bibinfo{author}{Thome, N.}
+\newblock \bibinfo{title}{{RT-HCP}: Dealing with inference delays and sample
+  efficiency to learn directly on robotic platforms}.
+\newblock \emph{\bibinfo{journal}{IEEE/RSJ International Conference on
+  Intelligent Robots and Systems (IROS)}} \bibinfo{pages}{597--603}
+  (\bibinfo{year}{2025}).
+
+\bibitem{muppidi2026time}
+\bibinfo{author}{Muppidi, A.}, \bibinfo{author}{Darwish, F.},
+  \bibinfo{author}{Cope, D.}, \bibinfo{author}{Henriques, J.~F.} \&
+  \bibinfo{author}{Foerster, J.~N.}
+\newblock \bibinfo{title}{Finding the time to think: Learning planning budgets
+  in real-time {RL}}.
+\newblock \emph{\bibinfo{journal}{arXiv preprint arXiv:2606.26463}}
+  (\bibinfo{year}{2026}).
+
+\bibitem{zhao2023act}
+\bibinfo{author}{Zhao, T.~Z.}, \bibinfo{author}{Kumar, V.},
+  \bibinfo{author}{Levine, S.} \& \bibinfo{author}{Finn, C.}
+\newblock \bibinfo{title}{Learning fine-grained bimanual manipulation with
+  low-cost hardware}.
+\newblock \emph{\bibinfo{journal}{Robotics: Science and Systems XIX}}
+  (\bibinfo{year}{2023}).
+
+\bibitem{chi2023diffusionpolicy}
+\bibinfo{author}{Chi, C.} \emph{et~al.}
+\newblock \bibinfo{title}{Diffusion policy: Visuomotor policy learning via
+  action diffusion}.
+\newblock \emph{\bibinfo{journal}{Robotics: Science and Systems XIX}}
+  (\bibinfo{year}{2023}).
+
+\bibitem{black2025rtc}
+\bibinfo{author}{Black, K.}, \bibinfo{author}{Galliker, M.~Y.} \&
+  \bibinfo{author}{Levine, S.}
+\newblock \bibinfo{title}{Real-time execution of action chunking flow
+  policies}.
+\newblock \emph{\bibinfo{journal}{Advances in Neural Information Processing
+  Systems}} \textbf{\bibinfo{volume}{38}} (\bibinfo{year}{2025}).
+
+\bibitem{shukor2025smolvla}
+\bibinfo{author}{Shukor, M.} \emph{et~al.}
+\newblock \bibinfo{title}{{SmolVLA}: A vision-language-action model for
+  affordable and efficient robotics}.
+\newblock \emph{\bibinfo{journal}{arXiv preprint arXiv:2506.01844}}
+  (\bibinfo{year}{2025}).
+
+\bibitem{wang2026rapac}
+\bibinfo{author}{Wang, T.} \emph{et~al.}
+\newblock \bibinfo{title}{{RAPAC-DP}: Response-aligned pending-action
+  compensation for diffusion policies under delayed execution}.
+\newblock \emph{\bibinfo{journal}{arXiv preprint arXiv:2608.15924}}
+  (\bibinfo{year}{2026}).
+
+\bibitem{motubrain2026wamrt}
+\bibinfo{author}{{Motubrain Team}}.
+\newblock \bibinfo{title}{World action models in real time: An empirical study
+  of smooth execution via asynchronous deployment}.
+\newblock \emph{\bibinfo{journal}{arXiv preprint arXiv:2608.01880}}
+  (\bibinfo{year}{2026}).
+
+\bibitem{liao2025dadp}
+\bibinfo{author}{Liao, A.}, \bibinfo{author}{Kim, D.-K.},
+  \bibinfo{author}{Smith, M.~O.}, \bibinfo{author}{Agha-mohammadi, A.-a.} \&
+  \bibinfo{author}{Omidshafiei, S.}
+\newblock \bibinfo{title}{Delay-aware diffusion policy: Bridging the
+  observation-execution gap in dynamic tasks}.
+\newblock \emph{\bibinfo{journal}{arXiv preprint arXiv:2512.07697}}
+  (\bibinfo{year}{2025}).
+
+\bibitem{jiang2026futurertc}
+\bibinfo{author}{Jiang, H.} \emph{et~al.}
+\newblock \bibinfo{title}{{FutureRTC}: Real-time robot execution with
+  anticipatory-conditioned action chunking}.
+\newblock \emph{\bibinfo{journal}{arXiv preprint arXiv:2607.24008}}
+  (\bibinfo{year}{2026}).
+
+\bibitem{ye2026dreamzero}
+\bibinfo{author}{Ye, S.} \emph{et~al.}
+\newblock \bibinfo{title}{World action models are zero-shot policies}.
+\newblock \emph{\bibinfo{journal}{arXiv preprint arXiv:2602.15922}}
+  (\bibinfo{year}{2026}).
+
+\bibitem{janner2019mbpo}
+\bibinfo{author}{Janner, M.}, \bibinfo{author}{Fu, J.}, \bibinfo{author}{Zhang,
+  M.} \& \bibinfo{author}{Levine, S.}
+\newblock \bibinfo{title}{When to trust your model: Model-based policy
+  optimization}.
+\newblock \emph{\bibinfo{journal}{Advances in Neural Information Processing
+  Systems}} \textbf{\bibinfo{volume}{32}} (\bibinfo{year}{2019}).
+
+\bibitem{lambert2020objective}
+\bibinfo{author}{Lambert, N.}, \bibinfo{author}{Amos, B.},
+  \bibinfo{author}{Yadan, O.} \& \bibinfo{author}{Calandra, R.}
+\newblock \bibinfo{title}{Objective mismatch in model-based reinforcement
+  learning}.
+\newblock \emph{\bibinfo{journal}{Proceedings of the 2nd Conference on Learning
+  for Dynamics and Control, PMLR}} \textbf{\bibinfo{volume}{120}},
+  \bibinfo{pages}{761--770} (\bibinfo{year}{2020}).
+
+\bibitem{beger2025optimal}
+\bibinfo{author}{Beger, S.}, \bibinfo{author}{Lin, Y.},
+  \bibinfo{author}{Stanojevic, K.} \& \bibinfo{author}{Hirche, S.}
+\newblock \bibinfo{title}{Optimal delay compensation in networked predictive
+  control}.
+\newblock \emph{\bibinfo{journal}{arXiv preprint arXiv:2512.11492}}
+  (\bibinfo{year}{2025}).
+
+\bibitem{zavala2009asnmpc}
+\bibinfo{author}{Zavala, V.~M.} \& \bibinfo{author}{Biegler, L.~T.}
+\newblock \bibinfo{title}{The advanced-step {NMPC} controller: Optimality,
+  stability and robustness}.
+\newblock \emph{\bibinfo{journal}{Automatica}} \textbf{\bibinfo{volume}{45}},
+  \bibinfo{pages}{86--93} (\bibinfo{year}{2009}).
+
+\bibitem{belvedere2026feedback}
+\bibinfo{author}{Belvedere, T.}, \bibinfo{author}{Ziegltrum, M.},
+  \bibinfo{author}{Turrisi, G.} \& \bibinfo{author}{Modugno, V.}
+\newblock \bibinfo{title}{{Feedback-{MPPI}}: Fast sampling-based {MPC} via
+  rollout differentiation -- adios low-level controllers}.
+\newblock \emph{\bibinfo{journal}{IEEE Robotics and Automation Letters}}
+  \textbf{\bibinfo{volume}{11}}, \bibinfo{pages}{1--8} (\bibinfo{year}{2026}).
+
+\bibitem{calafiore2006scenario}
+\bibinfo{author}{Calafiore, G.~C.} \& \bibinfo{author}{Campi, M.~C.}
+\newblock \bibinfo{title}{The scenario approach to robust control design}.
+\newblock \emph{\bibinfo{journal}{IEEE Transactions on Automatic Control}}
+  \textbf{\bibinfo{volume}{51}}, \bibinfo{pages}{742--753}
+  (\bibinfo{year}{2006}).
+
+\bibitem{lucia2013multistage}
+\bibinfo{author}{Lucia, S.}, \bibinfo{author}{Finkler, T.} \&
+  \bibinfo{author}{Engell, S.}
+\newblock \bibinfo{title}{Multi-stage nonlinear model predictive control
+  applied to a semi-batch polymerization reactor under uncertainty}.
+\newblock \emph{\bibinfo{journal}{Journal of Process Control}}
+  \textbf{\bibinfo{volume}{23}}, \bibinfo{pages}{1306--1319}
+  (\bibinfo{year}{2013}).
+
+\bibitem{dyro2021particle}
+\bibinfo{author}{Dyro, R.}, \bibinfo{author}{Harrison, J.},
+  \bibinfo{author}{Sharma, A.} \& \bibinfo{author}{Pavone, M.}
+\newblock \bibinfo{title}{Particle {MPC} for uncertain and learning-based
+  control}.
+\newblock \emph{\bibinfo{journal}{IEEE/RSJ International Conference on
+  Intelligent Robots and Systems (IROS)}}  (\bibinfo{year}{2021}).
+
+\bibitem{gandhi2021robust}
+\bibinfo{author}{Gandhi, M.}, \bibinfo{author}{Vlahov, B.},
+  \bibinfo{author}{Gibson, J.}, \bibinfo{author}{Williams, G.} \&
+  \bibinfo{author}{Theodorou, E.~A.}
+\newblock \bibinfo{title}{Robust model predictive path integral control:
+  Analysis and performance guarantees}.
+\newblock \emph{\bibinfo{journal}{IEEE Robotics and Automation Letters}}
+  \textbf{\bibinfo{volume}{6}}, \bibinfo{pages}{1423--1430}
+  (\bibinfo{year}{2021}).
+
+\bibitem{serfling2026ccmppi}
+\bibinfo{author}{Serfling, B.}, \bibinfo{author}{Doll, K.} \&
+  \bibinfo{author}{Radkhah-Lens, K.}
+\newblock \bibinfo{title}{Chance-constrained {MPPI} under state and dynamic
+  object prediction uncertainty and the evaluation of collision risk
+  calibration}.
+\newblock \emph{\bibinfo{journal}{arXiv preprint arXiv:2605.28330}}
+  (\bibinfo{year}{2026}).
+
+\bibitem{liu2026clis}
+\bibinfo{author}{Liu, Z.} \& \bibinfo{author}{Chen, X.}
+\newblock \bibinfo{title}{{CLIS-MPPI}: Closed-loop model predictive path
+  integral control with initial-state sampling under execution delay}.
+\newblock \bibinfo{howpublished}{IEEE Conference on Decision and Control (CDC),
+  Honolulu, paper WeAT4.5, to appear} (\bibinfo{year}{2026}).
+
+\bibitem{tassa2018dmc}
+\bibinfo{author}{Tassa, Y.} \emph{et~al.}
+\newblock \bibinfo{title}{{DeepMind} control suite}.
+\newblock \emph{\bibinfo{journal}{arXiv preprint arXiv:1801.00690}}
+  (\bibinfo{year}{2018}).
+
+\bibitem{maes2026swm}
+\bibinfo{author}{Maes, L.} \emph{et~al.}
+\newblock \bibinfo{title}{stable-worldmodel: A platform for reproducible world
+  modeling research and evaluation}.
+\newblock \emph{\bibinfo{journal}{arXiv preprint arXiv:2605.21800}}
+  (\bibinfo{year}{2026}).
+
+\bibitem{zhang2025worldinworld}
+\bibinfo{author}{Zhang, J.} \emph{et~al.}
+\newblock \bibinfo{title}{{World-In-World}: World models in a closed-loop
+  world}.
+\newblock \emph{\bibinfo{journal}{International Conference on Learning
+  Representations (ICLR)}} \bibinfo{pages}{55660--55699}
+  (\bibinfo{year}{2026}).
+
+\bibitem{reddi2019mlperf}
+\bibinfo{author}{Reddi, V.~J.}, \bibinfo{author}{Cheng, C.},
+  \bibinfo{author}{Kanter, D.}, \bibinfo{author}{Mattson, P.} \emph{et~al.}
+\newblock \bibinfo{title}{{MLPerf} inference benchmark}.
+\newblock \emph{\bibinfo{journal}{ACM/IEEE 47th Annual International Symposium
+  on Computer Architecture (ISCA)}} \bibinfo{pages}{446--459}
+  (\bibinfo{year}{2020}).
+
+\bibitem{song2021ddim}
+\bibinfo{author}{Song, J.}, \bibinfo{author}{Meng, C.} \&
+  \bibinfo{author}{Ermon, S.}
+\newblock \bibinfo{title}{Denoising diffusion implicit models}.
+\newblock \emph{\bibinfo{journal}{International Conference on Learning
+  Representations (ICLR)}}  (\bibinfo{year}{2021}).
+
+\bibitem{lin2025speculative}
+\bibinfo{author}{Lin, Z.}, \bibinfo{author}{Sun, Z.}, \bibinfo{author}{Chen,
+  S.}, \bibinfo{author}{Chen, X.} \& \bibinfo{author}{Zhao, R.}
+\newblock \bibinfo{title}{Accelerating multi-modal {LLM} gaming performance via
+  input prediction and mishit correction}.
+\newblock \emph{\bibinfo{journal}{arXiv preprint arXiv:2512.17250}}
+  (\bibinfo{year}{2025}).
+
+\bibitem{diehl2005rti}
+\bibinfo{author}{Diehl, M.}, \bibinfo{author}{Bock, H.~G.} \&
+  \bibinfo{author}{Schl{\"o}der, J.~P.}
+\newblock \bibinfo{title}{A real-time iteration scheme for nonlinear
+  optimization in optimal feedback control}.
+\newblock \emph{\bibinfo{journal}{SIAM Journal on Control and Optimization}}
+  \textbf{\bibinfo{volume}{43}}, \bibinfo{pages}{1714--1736}
+  (\bibinfo{year}{2005}).
+
+\bibitem{melon2021receding}
+\bibinfo{author}{Melon, O.} \emph{et~al.}
+\newblock \bibinfo{title}{Receding-horizon perceptive trajectory optimization
+  for dynamic legged locomotion with learned initialization}.
+\newblock \emph{\bibinfo{journal}{IEEE International Conference on Robotics and
+  Automation (ICRA)}} \bibinfo{pages}{9805--9811} (\bibinfo{year}{2021}).
+
+\bibitem{cheng2026adarep}
+\bibinfo{author}{Cheng, Y.} \emph{et~al.}
+\newblock \bibinfo{title}{{AdaReP}: Adaptive re-planning under model mismatch
+  for neural world-model predictive control}.
+\newblock \emph{\bibinfo{journal}{Artificial Neural Networks and Machine
+  Learning -- ICANN 2026, Lecture Notes in Computer Science}}
+  \textbf{\bibinfo{volume}{17093}}, \bibinfo{pages}{216--228}
+  (\bibinfo{year}{2026}).
+
+\bibitem{chen2024diffusionforcing}
+\bibinfo{author}{Chen, B.} \emph{et~al.}
+\newblock \bibinfo{title}{Diffusion forcing: Next-token prediction meets
+  full-sequence diffusion}.
+\newblock \emph{\bibinfo{journal}{Advances in Neural Information Processing
+  Systems}} \textbf{\bibinfo{volume}{37}}, \bibinfo{pages}{24081--24125}
+  (\bibinfo{year}{2024}).
+
+\bibitem{todorov2012mujoco}
+\bibinfo{author}{Todorov, E.}, \bibinfo{author}{Erez, T.} \&
+  \bibinfo{author}{Tassa, Y.}
+\newblock \bibinfo{title}{{MuJoCo}: A physics engine for model-based control}.
+\newblock \emph{\bibinfo{journal}{IEEE/RSJ International Conference on
+  Intelligent Robots and Systems (IROS)}} \bibinfo{pages}{5026--5033}
+  (\bibinfo{year}{2012}).
+
+\bibitem{xia2026metrictrust}
+\bibinfo{author}{Xia, R.}
+\newblock \bibinfo{title}{{MetricTrust}: experiment code and diffusion planning
+  pilot records}.
+\newblock \bibinfo{howpublished}{Repository snapshot ee9cc0d,
+  \url{https://github.com/rxailab/MetricTrust/tree/ee9cc0d0bd5362e0a0c563a1b63da7c02d86927a}}
+  (\bibinfo{year}{2026}).
+
+\bibitem{wan2025}
+\bibinfo{author}{{Team Wan}}, \bibinfo{author}{Wang, A.}, \bibinfo{author}{Ai,
+  B.}, \bibinfo{author}{Wen, B.} \emph{et~al.}
+\newblock \bibinfo{title}{Wan: Open and advanced large-scale video generative
+  models}.
+\newblock \emph{\bibinfo{journal}{arXiv preprint arXiv:2503.20314}}
+  (\bibinfo{year}{2025}).
+
+\bibitem{efron1993bootstrap}
+\bibinfo{author}{Efron, B.} \& \bibinfo{author}{Tibshirani, R.~J.}
+\newblock \emph{\bibinfo{title}{An Introduction to the Bootstrap}}
+  (\bibinfo{publisher}{Chapman \& Hall}, \bibinfo{year}{1993}).
+
+\bibitem{holm1979simple}
+\bibinfo{author}{Holm, S.}
+\newblock \bibinfo{title}{A simple sequentially rejective multiple test
+  procedure}.
+\newblock \emph{\bibinfo{journal}{Scandinavian Journal of Statistics}}
+  \textbf{\bibinfo{volume}{6}}, \bibinfo{pages}{65--70} (\bibinfo{year}{1979}).
+
+\end{thebibliography}

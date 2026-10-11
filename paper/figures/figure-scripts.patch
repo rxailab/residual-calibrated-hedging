@@ -1,0 +1,390 @@
+diff --git a/paper/scripts/fig_delay_curves.py b/paper/scripts/fig_delay_curves.py
+index 9313cb4..afb6aad 100644
+--- a/paper/scripts/fig_delay_curves.py
++++ b/paper/scripts/fig_delay_curves.py
+@@ -4,37 +4,51 @@ split of the delay loss into feedback-rate and mismatch terms (results/latency/s
+ Redesign of 6 October 2026 (Claude Design handoff, figures/delay_curves.svg):
+ 1440 x 600 px; panel a with direct end-of-line labels and 95 % bands, panel b grouped bars
+ with 95 % intervals.
++Revision of 8 October 2026: panel b overlays the eight eligible family-task cells as dots
++(each bar is their equal-weight mean, as in latency/analyse.py) and its axis runs from -0.10
++to 0.50 so that every cell is shown, with the legend above the data.  All text is 8 pt at
++the 180-mm print width (figstyle.TEXT), so the canvas is 1440 x 570 px and panel a is
++narrower to leave room for its end-of-line labels.
+ Run: /mmfs1/storage/users/xiar3/envs/figenv/bin/python scripts/fig_delay_curves.py
+ """
+ import json
++import math
+ 
+ import figstyle as F
+ 
+ S = json.loads((F.ROOT.parent / "results" / "latency" / "summary.json").read_text())
+ DS = [1, 2, 4, 8, 16]
+ P = lambda d, key: S["pooled"][f"d{d}"][key]
++CELLS = [S["cells"][c]["arms"] for c in S["hypotheses"]["eligible_cells"]]
++LOSS = {"F": lambda m, d: m["paused1"] - m[f"paused{d}"],
++        "M_aligned": lambda m, d: m[f"paused{d}"] - m[f"aligned{d}"],
++        "M_cpp": lambda m, d: m[f"paused{d}"] - m[f"cpp{d}"]}
++cell_values = lambda d, key: [LOSS[key](m, d) for m in CELLS]
++assert all(math.isclose(sum(cell_values(d, k)) / len(CELLS), P(d, k)["est"], abs_tol=1e-12) for d in DS for k in LOSS)
+ italic = lambda s: (s, {"italic": True})
++W, H = 1440, 570
++YT, YB = 100, 470                                       # plot top and bottom, both panels
+ body = []
+ 
+ # ---------------------------------------------------------------- panel a
+-X0, X1, Y0 = 130, 590, 440
+-xs = [150 + 105 * i for i in range(len(DS))]          # log2-spaced delays
++X0, X1 = 100, 560
++xs = [120 + 105 * i for i in range(len(DS))]          # log2-spaced delays
+ ylo, yhi = 0.1, 0.5
+-sy = (Y0 - 116.19) / (yhi - ylo)
+-ya = lambda v: Y0 - (v - ylo) * sy
+-body.append(F.panel_title(60, 52, "a", "Return under delay"))
++sy = (YB - YT - 10) / (yhi - ylo)
++ya = lambda v: YB - (v - ylo) * sy
++body.append(F.panel_title(30, 44, "a", "Return under delay"))
+ for k in range(5):
+     v = ylo + 0.1 * k
+     body.append(F.line(X0, ya(v), X1, ya(v), F.GRID))
+-    body.append(F.text(X0 - 14, ya(v), f"{v:.1f}", size=19, fill=F.MUTED, anchor="end", baseline="middle"))
+-body.append(F.line(X0, Y0, X1, Y0, F.AXIS, 1.5))
++    body.append(F.text(X0 - 14, ya(v), f"{v:.1f}", fill=F.MUTED, anchor="end", baseline="middle"))
++body.append(F.line(X0, YB, X1, YB, F.AXIS, 1.5))
+ for x, d in zip(xs, DS):
+-    body.append(F.text(x, 470, str(d), size=19, fill=F.MUTED, anchor="middle"))
+-body.append(F.text((X0 + X1) / 2, 506, ["delay ", italic("d"), " (decisions)"], size=21, anchor="middle"))
+-body.append(F.text(58, 270, "normalised return", size=21, anchor="middle", rotate=-90))
++    body.append(F.text(x, YB + 32, str(d), fill=F.MUTED, anchor="middle"))
++body.append(F.text((X0 + X1) / 2, YB + 68, ["delay ", italic("d"), " (decisions)"], anchor="middle"))
++body.append(F.text(34, (YT + YB) / 2, "normalised return", anchor="middle", rotate=-90))
+ p1 = P(1, "R_paused1")["est"]
+ body.append(F.line(X0, ya(p1), X1, ya(p1), F.GREY, 1.3, "5 4"))
+-body.append(F.text(570, ya(p1) - 12, "paused, replan every decision", size=17, fill=F.MUTED, anchor="end"))
++body.append(F.text(X1, ya(p1) - 12, "paused, replan every decision", fill=F.MUTED, anchor="end"))
+ ARMS = [("R_paused_d", "paused, replan every d", F.NAVY, None),
+         ("R_cpp", "committed prefix", F.GREEN, None),
+         ("R_aligned", "time-aligned", F.ORANGE, None),
+@@ -52,25 +66,30 @@ for key, lab, col, dash in ARMS:
+     body += [f'<circle cx="{x}" cy="{y:.2f}" r="5.5" fill="{col}" stroke="#fff" stroke-width="2"></circle>'
+              for x, y in zip(xs, ys)]
+     ends.append([ys[-1], lab, col])
+-ends.sort()                                             # nudge end labels at least 24 px apart
++ends.sort()                                             # nudge end labels at least 27 px apart
+ for _ in range(20):
+     for i in range(len(ends) - 1):
+         gap = ends[i + 1][0] - ends[i][0]
+-        if gap < 24:
+-            ends[i][0] -= (24 - gap) / 2; ends[i + 1][0] += (24 - gap) / 2
++        if gap < 27:
++            ends[i][0] -= (27 - gap) / 2; ends[i + 1][0] += (27 - gap) / 2
+ for y, lab, col in ends:
+-    body.append(F.text(584, y, lab, size=18, fill=col, weight=600, baseline="middle"))
++    body.append(F.text(xs[-1] + 14, y, lab, fill=col, weight=600, baseline="middle"))
+ 
+ # ---------------------------------------------------------------- panel b
+-BX0, BX1, BY0 = 910, 1410, 395.65
+-sb = (BY0 - 100) / 0.20
+-yb = lambda v: BY0 - v * sb
+-body.append(F.panel_title(840, 52, "b", "Where the delay loss comes from"))
+-for k in range(5):
+-    v = 0.05 * k
++BX0, BX1 = 945, 1430
++YLO, YHI = -0.10, 0.50                                  # covers every cell value, legend above the data
++sb = (YB - YT) / (YHI - YLO)
++yb = lambda v: YB - (v - YLO) * sb
++BY0 = yb(0)
++dot = lambda x, y: (f'<circle cx="{x:.2f}" cy="{y:.2f}" r="3.4" fill="#fff" stroke="{F.INK}" '
++                    f'stroke-width="1.2"></circle>')
++body.append(F.panel_title(842, 44, "b", "Where the delay loss comes from"))
++for k in range(7):
++    v = YLO + 0.1 * k
+     body.append(F.line(BX0, yb(v), BX1, yb(v), F.GRID))
+-    body.append(F.text(BX0 - 14, yb(v), f"{v:.2f}", size=19, fill=F.MUTED, anchor="end", baseline="middle"))
+-centers = [960 + 100 * i for i in range(len(DS))]
++    body.append(F.text(BX0 - 14, yb(v), f"{v:.2f}".replace("-", "−"), fill=F.MUTED, anchor="end",
++                       baseline="middle"))
++centers = [BX0 + 48 + 97 * i for i in range(len(DS))]
+ BARS = [("F", "feedback-rate loss F(d)", F.NAVY, -40),
+         ("M_aligned", "mismatch, time-aligned", F.ORANGE, -12),
+         ("M_cpp", "mismatch, committed prefix", F.GREEN, 16)]
+@@ -81,14 +100,19 @@ for j, (key, lab, col, off) in enumerate(BARS):
+         if abs(h) < 1.5 and r["ci95"][0] == r["ci95"][1]:   # exactly zero by construction (F at d = 1)
+             body.append(F.line(x, BY0, x + 24, BY0, col, 3)); continue
+         body.append(F.rect(x, min(yb(0), yb(r["est"])), 24, max(abs(h), 1.33), col, rx=2))
++        # one dot per eligible cell, always in the same horizontal order, under the interval
++        vals = cell_values(d, key)
++        body += [dot(x + 12 + (i - (len(vals) - 1) / 2) * 2.4, yb(v)) for i, v in enumerate(vals)]
+         lo, hi = yb(r["ci95"][0]), yb(r["ci95"][1])
+         body += [F.line(x + 12, lo, x + 12, hi, F.BODY, 1.4), F.line(x + 7, lo, x + 17, lo, F.BODY, 1.4),
+                  F.line(x + 7, hi, x + 17, hi, F.BODY, 1.4)]
+-    body.append(F.rect(920, 101 + 28 * j, 22, 14, col, rx=2))
+-    body.append(F.text(952, 108 + 28 * j, lab, size=18, baseline="middle"))
++    body.append(F.rect(955, YT + 4 + 30 * j, 24, 16, col, rx=2))
++    body.append(F.text(989, YT + 12 + 30 * j, lab, baseline="middle"))
++body.append(dot(967, YT + 102))
++body.append(F.text(989, YT + 102, "family–task cell", baseline="middle"))
+ body.append(F.line(BX0, BY0, BX1, BY0, F.AXIS, 1.5))
+ for c, d in zip(centers, DS):
+-    body.append(F.text(c, 470, str(d), size=19, fill=F.MUTED, anchor="middle"))
+-body.append(F.text(1160, 506, ["delay ", italic("d"), " (decisions)"], size=21, anchor="middle"))
+-body.append(F.text(838, 270, "loss in normalised return", size=21, anchor="middle", rotate=-90))
+-F.render(F.svg(1440, 600, body), "delay_curves")
++    body.append(F.text(c, YB + 32, str(d), fill=F.MUTED, anchor="middle"))
++body.append(F.text((BX0 + BX1) / 2, YB + 68, ["delay ", italic("d"), " (decisions)"], anchor="middle"))
++body.append(F.text(852, (YT + YB) / 2, "loss in normalised return", anchor="middle", rotate=-90))
++F.render(F.svg(W, H, body), "delay_curves")
+diff --git a/paper/scripts/fig_motivation.py b/paper/scripts/fig_motivation.py
+index 1832112..b1748cb 100644
+--- a/paper/scripts/fig_motivation.py
++++ b/paper/scripts/fig_motivation.py
+@@ -4,9 +4,14 @@
+ Redesign of 6 October 2026 (Claude Design handoff, figures/cost_vs_latency.svg):
+ 1440 x 600 px, two panels, bars grouped by replanning interval, the simulated duration
+ of a whole episode as a shaded band in panel b.
++Revision of 8 October 2026: each bar is the mean over the three tasks, and the per-task
++values (evidence/pilot_records.json) are overlaid as dots, left to right in TASKS order.
++All text is 8 pt at the 180-mm print width (figstyle.TEXT), so the canvas is 1440 x 690 px,
++the notes sit above the plots, and the definitions of s and r moved to the figure legend.
+ Run: /mmfs1/storage/users/xiar3/envs/figenv/bin/python scripts/fig_motivation.py
+ """
+ import csv
++import json
+ import math
+ 
+ import figstyle as F
+@@ -16,57 +21,73 @@ C = [float(r["planning_seconds_per_agent_decision"]) for r in rows]
+ B = [float(r["mean_batch_planning_call_seconds"]) for r in rows]
+ S = [int(r["sampler_steps"]) for r in rows]
+ RP = [int(r["replan_decisions"]) for r in rows]
++# per-task values behind each bar, derived as in analyse_pilot.py (5 episodes x 500 decisions)
++TASKS = ["cartpole-swingup", "walker-walk", "cup-catch"]
++RECS = json.loads((F.ROOT / "evidence" / "pilot_records.json").read_text(encoding="utf-8"))["records"]
++per_task = lambda s, r: [next(x for x in RECS if x["task"] == t and x["eval_settings"]["steps"] == s
++                              and x["eval_settings"]["replan_blocks"] * 4 == r) for t in TASKS]
++PC = [[x["t_u1_plan_s"] / 2500 for x in per_task(s, r)] for s, r in zip(S, RP)]
++PB = [[x["t_u1_plan_s"] / math.ceil(500 / r) for x in per_task(s, r)] for s, r in zip(S, RP)]
++assert all(math.isclose(sum(p) / len(p), v, rel_tol=1e-9) for p, v in zip(PC + PB, C + B))
+ # simulated duration of one 500-decision episode: action repeat 2 x control timestep
+ EPISODE_S = {"cartpole-swingup": 500 * 2 * 0.01, "walker-walk": 500 * 2 * 0.025, "cup-catch": 500 * 2 * 0.02}
+ ep_lo, ep_hi = min(EPISODE_S.values()), max(EPISODE_S.values())
+ 
+-Y0, YTOP = 440, 100                      # plot baseline and top, px
++W, H = 1440, 690
++Y0, YTOP = 588, 172                      # plot baseline and top (last tick), px
+ 
+ 
+-def panel(x0, x1, values, ymax, step, fmt, title_x, letter, title, ylab, ylab_x, note, band=None, headroom=0):
+-    """ymax: last tick; headroom: extra data units above it (room for notes and the legend)."""
+-    out = [F.panel_title(title_x, 52, letter, title)]
+-    sy = (Y0 - YTOP) / (ymax + headroom)
++def dot(x, y):
++    """One overlaid data point: white fill with a dark ring, visible on the bars and on white."""
++    return f'<circle cx="{x:.2f}" cy="{y:.2f}" r="5.5" fill="#fff" stroke="{F.INK}" stroke-width="1.6"></circle>'
++
++
++def panel(x0, x1, values, points, ymax, step, fmt, title_x, letter, title, ylab, ylab_x, notes):
++    """points: per-task values behind each bar; ymax: last tick; notes: lines above the plot."""
++    out = [F.panel_title(title_x, 44, letter, title)]
++    sy = (Y0 - YTOP) / ymax
+     y = lambda v: Y0 - v * sy
+     for v in range(0, int(ymax) + 1, step):
+         out.append(F.line(x0, y(v), x1, y(v), F.GRID))
+-        out.append(F.text(x0 - 14, y(v), str(v), size=19, fill=F.MUTED, anchor="end", baseline="middle"))
+-    if band:
+-        lo, hi = band
+-        out.append(F.rect(x0, y(hi), x1 - x0, y(lo) - y(hi), F.ORANGE, fill_opacity="0.22"))
+-        out.append(F.line(x0, y(hi), x1, y(hi), F.ORANGE, 1.2, "5 4"))
+-        out.append(F.line(x0, y(lo), x1, y(lo), F.ORANGE, 1.2, "5 4"))
++        out.append(F.text(x0 - 14, y(v), str(v), fill=F.MUTED, anchor="end", baseline="middle"))
+     slot = (x1 - x0) / len(values)
+     bw = 0.58 * slot
+     centers = [x0 + slot * (i + 0.5) for i in range(len(values))]
+-    for c, v, s in zip(centers, values, S):
++    for c, v, s, pts in zip(centers, values, S, points):
+         out.append(F.rect(c - bw / 2, y(v), bw, Y0 - y(v), F.NAVY, rx=2))
+-        out.append(F.text(c, y(v) - 10, fmt.format(v), size=18, anchor="middle", weight=500))
+-        out.append(F.text(c, 468, f"s = {s}", size=19, fill=F.MUTED, anchor="middle"))
++        out += [dot(c + (k - (len(pts) - 1) / 2) * bw / 4, y(p)) for k, p in enumerate(pts)]
++        out.append(F.text(c, y(max(v, *pts)) - 16, fmt.format(v), anchor="middle", weight=500))
++        out.append(F.text(c, Y0 + 32, f"s = {s}", fill=F.MUTED, anchor="middle"))
+     out.append(F.line(x0, Y0, x1, Y0, F.AXIS, 1.5))
+     for r in sorted(set(RP)):
+         idx = [i for i, q in enumerate(RP) if q == r]
+         a, b = centers[idx[0]] - bw / 2, centers[idx[-1]] + bw / 2
+-        out.append(F.line(a, 492, b, 492, F.AXIS, 1.2))
+-        out.append(F.text((a + b) / 2, 518, f"replan every {r} decisions", size=19, anchor="middle"))
+-    out.append(F.text(ylab_x, 270, ylab, size=21, anchor="middle", rotate=-90))
+-    out.append(F.text((x0 + x1) / 2, 118, note, size=18, fill=F.MUTED, anchor="middle"))
++        out.append(F.line(a, Y0 + 52, b, Y0 + 52, F.AXIS, 1.2))
++        out.append(F.text((a + b) / 2, Y0 + 82, f"replan every {r} decisions", anchor="middle"))
++    out.append(F.text(ylab_x, (Y0 + YTOP) / 2, ylab, anchor="middle", rotate=-90))
++    out += [F.text((x0 + x1) / 2, 88 + 28 * i, note, fill=F.MUTED, anchor="middle") for i, note in enumerate(notes)]
+     return out
+ 
+ 
++def band(x0, x1, ymax, lo, hi):
++    """Shaded band for the simulated duration of a whole episode, drawn under the bars."""
++    sy = (Y0 - YTOP) / ymax
++    y = lambda v: Y0 - v * sy
++    return [F.rect(x0, y(hi), x1 - x0, y(lo) - y(hi), F.ORANGE, fill_opacity="0.22"),
++            F.line(x0, y(hi), x1, y(hi), F.ORANGE, 1.2, "5 4"), F.line(x0, y(lo), x1, y(lo), F.ORANGE, 1.2, "5 4")]
++
++
+ ratio_c = max(C) / min(C)
+ ratio_b = max(B) / min(B)
+-body = []
+-body += panel(130, 660, C, 3 * math.ceil(max(C) / 3), 3, "{:.1f}", 60, "a", "Amortised planning cost",
+-              "planning seconds per agent decision", 58, f"{ratio_c:.1f}× lower across the six configurations")
++AX0, AX1, BX0, BX1 = 100, 660, 868, 1428
+ tick_b = 50 * math.ceil(max(B) / 50)
+-body += panel(900, 1410, B, tick_b, 50, "{:.0f}", 830, "b", "Duration of one planning call",
+-              "seconds per batched call (5 episodes)", 828,
+-              f"{ratio_b:.1f}× lower at most; planning less often changes nothing", band=(ep_lo, ep_hi),
+-              headroom=0.16 * tick_b)
+-body.append(F.rect(1000, 138, 22, 12, F.ORANGE, stroke=F.ORANGE, stroke_width="1", fill_opacity="0.35"))
+-body.append(F.text(1032, 144, f"one whole episode ({ep_lo:.0f}–{ep_hi:.0f} s simulated)", size=18,
++body = band(BX0, BX1, tick_b, ep_lo, ep_hi)
++body += panel(AX0, AX1, C, PC, 3 * math.ceil(max(C) / 3), 3, "{:.1f}", 30, "a", "Amortised planning cost",
++              "planning seconds per agent decision", 34, [f"{ratio_c:.1f}× lower across the six configurations"])
++body += panel(BX0, BX1, B, PB, tick_b, 50, "{:.0f}", 776, "b", "Duration of one planning call",
++              "seconds per batched call (5 episodes)", 790,
++              [f"{ratio_b:.1f}× lower at most;", "planning less often changes nothing"])
++body.append(F.rect(BX0 + 72, 137, 24, 14, F.ORANGE, stroke=F.ORANGE, stroke_width="1", fill_opacity="0.35"))
++body.append(F.text(BX0 + 106, 144, f"one whole episode ({ep_lo:.0f}–{ep_hi:.0f} s simulated)",
+                    fill=F.ORANGE_TEXT, baseline="middle"))
+-body.append(F.text(770, 560, "sampler steps s; one planning call serves r decisions", size=18, fill=F.MUTED,
+-                   anchor="middle"))
+-F.render(F.svg(1440, 600, body), "cost_vs_latency")
++F.render(F.svg(W, H, body), "cost_vs_latency")
+diff --git a/paper/scripts/fig_timeline.py b/paper/scripts/fig_timeline.py
+index cc0d91a..8fbbf0f 100644
+--- a/paper/scripts/fig_timeline.py
++++ b/paper/scripts/fig_timeline.py
+@@ -5,6 +5,8 @@ Redesign of 6 October 2026 (Claude Design handoff, figures/cpp_timeline.svg):
+ 1440 x 900 px; plans in navy, executed slices in light blue, the slices executed from a
+ state the plan did not assume outlined in orange, those planned for the predicted state
+ in green.
++Revision of 8 October 2026: all text 8 pt and subscripts 6 pt at the 180-mm print width
++(figstyle.TEXT, figstyle.SUB); label lines 28 px apart; second legend item moved right.
+ Run: /mmfs1/storage/users/xiar3/envs/figenv/bin/python scripts/fig_timeline.py
+ """
+ import figstyle as F
+@@ -17,18 +19,18 @@ sub = lambda s: (s, {"sub": True})
+ 
+ 
+ def label(y_top, title, sub1=None, sub2=None, title_weight=600):
+-    out = [F.text(340, y_top, title, size=21, anchor="end", weight=title_weight)]
++    out = [F.text(340, y_top, title, anchor="end", weight=title_weight)]
+     if sub1:
+-        out.append(F.text(340, y_top + 26, sub1, size=21, fill=F.MUTED if sub2 else F.INK, anchor="end"))
++        out.append(F.text(340, y_top + 28, sub1, fill=F.MUTED if sub2 else F.INK, anchor="end"))
+     if sub2:
+-        out.append(F.text(340, y_top + 52, sub2, size=21, fill=F.MUTED, anchor="end"))
++        out.append(F.text(340, y_top + 56, sub2, fill=F.MUTED, anchor="end"))
+     return out
+ 
+ 
+ def exec_box(x, y, segs, outline=None):
+     kw = {"stroke": outline, "stroke_width": "3"} if outline else {}
+     return [F.rect(x, y, BOX_W, EXEC_H, F.LIGHT, rx=3, **kw),
+-            F.text(x + BOX_W / 2, y + EXEC_H / 2, segs, size=19, anchor="middle", baseline="middle")]
++            F.text(x + BOX_W / 2, y + EXEC_H / 2, segs, anchor="middle", baseline="middle")]
+ 
+ 
+ def arrow(x, y):
+@@ -44,7 +46,7 @@ body.append(F.line(384, 179, 1416, 179, F.GRID, 2))
+ for k in range(N):
+     x = X0 + k * SLOT
+     body.append(F.rect(x, 60, 26.25, PLAN_H, F.NAVY, rx=3))
+-    body.append(F.text(x + 36.25, 89, "plan", size=17, fill=F.NAVY, baseline="middle"))
++    body.append(F.text(x + 36.25, 89, "plan", fill=F.NAVY, baseline="middle"))
+     body += exec_box(x + 3, 146, [italic("A"), sub(str(k)), " [0:", italic("d"), "]"])
+ 
+ # rows 2 and 3: asynchronous schedules
+@@ -59,7 +61,7 @@ for row, (y_plan, title, subtitle, predicted, colour) in enumerate([
+         t = (k + 1) * D if predicted else k * D
+         state = [("ŝ" if predicted else "s", {"italic": True}), sub(str(t))]
+         body.append(F.rect(x, y_plan, BOX_W, PLAN_H, F.NAVY, rx=3))
+-        body.append(F.text(x + BOX_W / 2, y_plan + PLAN_H / 2, ["plan from "] + state, size=19, fill="#fff",
++        body.append(F.text(x + BOX_W / 2, y_plan + PLAN_H / 2, ["plan from "] + state, fill="#fff",
+                            anchor="middle", baseline="middle"))
+         if k == 0:
+             body += exec_box(x, y_exec, ["bootstrap"])
+@@ -73,15 +75,15 @@ body.append(F.line(X0, 706, X0 + N * SLOT, 706, F.AXIS, 1.5))
+ for k in range(N + 1):
+     x = X0 + k * SLOT
+     body.append(F.line(x, 706, x, 714, F.AXIS, 1.5))
+-    body.append(F.text(x, 740, str(k * D), size=19, fill=F.MUTED, anchor="middle"))
+-body.append(F.text(X0 + N * SLOT / 2, 774, ["decision index  (delay ", italic("d"), f" = {D} decisions)"], size=21,
++    body.append(F.text(x, 740, str(k * D), fill=F.MUTED, anchor="middle"))
++body.append(F.text(X0 + N * SLOT / 2, 774, ["decision index  (delay ", italic("d"), f" = {D} decisions)"],
+                    anchor="middle"))
+ 
+ # legend
+ body.append(F.rect(400, 856, 26, 16, F.LIGHT, rx=2, stroke=F.ORANGE, stroke_width="3"))
+ body.append(F.text(438, 864, ["plan made for ", italic("s"), sub("t"), ", executed from ", italic("s"), sub("t+d")],
+-                   size=18, fill=F.MUTED, baseline="middle"))
+-body.append(F.rect(850, 856, 26, 16, F.LIGHT, rx=2, stroke=F.GREEN, stroke_width="3"))
+-body.append(F.text(888, 864, ["plan made for the predicted ", ("ŝ", {"italic": True}), sub("t+d")],
+-                   size=18, fill=F.MUTED, baseline="middle"))
++                   fill=F.MUTED, baseline="middle"))
++body.append(F.rect(880, 856, 26, 16, F.LIGHT, rx=2, stroke=F.GREEN, stroke_width="3"))
++body.append(F.text(918, 864, ["plan made for the predicted ", ("ŝ", {"italic": True}), sub("t+d")],
++                   fill=F.MUTED, baseline="middle"))
+ F.render(F.svg(1440, 900, body), "cpp_timeline")
+diff --git a/paper/scripts/figstyle.py b/paper/scripts/figstyle.py
+index 6b94912..289b3bb 100644
+--- a/paper/scripts/figstyle.py
++++ b/paper/scripts/figstyle.py
+@@ -27,6 +27,10 @@ NAVY, ORANGE, GREEN, GREY = "#0f3b5f", "#e07a2f", "#2f8f6f", "#7a8290"
+ LIGHT, ORANGE_TEXT = "#c9d7e3", "#9a4f17"
+ WEIGHTS = {400: "Regular", 500: "Medium", 600: "SemiBold", 700: "Bold"}
+ _FONT_CACHE = {}
++# Type sizes in px (revision of 8 October 2026).  The 1440-px canvas prints 180 mm wide, so
++# 1 pt = 2.82 px: body text 23 px = 8.1 pt (the size npj Artificial Intelligence asks for at
++# print size), panel titles 26 px = 9.2 pt, subscripts 17 px = 6.0 pt.
++TEXT, TITLE, SUB, SUB_DY = 23, 26, 17, 7
+ 
+ 
+ def _font(size, weight=400, italic=False):
+@@ -48,7 +52,7 @@ def width(segments, size, weight=400):
+     return w
+ 
+ 
+-def text(x, y, segments, size=19, fill=INK, anchor="start", weight=400, baseline=None, rotate=None):
++def text(x, y, segments, size=TEXT, fill=INK, anchor="start", weight=400, baseline=None, rotate=None):
+     """SVG <text>.  `segments` is a string or a list of str / (str, opts) pieces; opts:
+     italic, weight, size, sub (subscript: smaller and lowered), dx, fill."""
+     if isinstance(segments, str):
+@@ -80,10 +84,10 @@ def text(x, y, segments, size=19, fill=INK, anchor="start", weight=400, baseline
+         if o.get("dx"):
+             ta.append(f'dx="{o["dx"]}"')
+         if o.get("sub"):
+-            ta += [f'font-size="{o.get("size", 14)}"', 'dy="6"' if not lowered else ""]
++            ta += [f'font-size="{o.get("size", SUB)}"', f'dy="{SUB_DY}"' if not lowered else ""]
+             lowered = True
+         elif lowered:
+-            ta.append('dy="-6"'); lowered = False
++            ta.append(f'dy="-{SUB_DY}"'); lowered = False
+         if o.get("size") and not o.get("sub"):
+             ta.append(f'font-size="{o["size"]}"')
+         body.append(f'<tspan {" ".join(t for t in ta if t)}>{escape(s)}</tspan>' if ta else escape(s))
+@@ -96,7 +100,7 @@ def _norm(segments, size):
+         s, o = (seg, {}) if isinstance(seg, str) else seg
+         o = dict(o)
+         if o.get("sub"):
+-            o.setdefault("size", 14)
++            o.setdefault("size", SUB)
+         out.append((s, o))
+     return out
+ 
+@@ -113,7 +117,7 @@ def line(x1, y1, x2, y2, stroke, width=1, dash=None):
+ 
+ 
+ def panel_title(x, y, letter, title):
+-    return text(x, y, [(letter, {"weight": 700}), (title, {"weight": 600, "dx": 14})], size=25)
++    return text(x, y, [(letter, {"weight": 700}), (title, {"weight": 600, "dx": 14})], size=TITLE)
+ 
+ 
+ def svg(w, h, body):
