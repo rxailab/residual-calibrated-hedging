@@ -27,6 +27,10 @@ NAVY, ORANGE, GREEN, GREY = "#0f3b5f", "#e07a2f", "#2f8f6f", "#7a8290"
 LIGHT, ORANGE_TEXT = "#c9d7e3", "#9a4f17"
 WEIGHTS = {400: "Regular", 500: "Medium", 600: "SemiBold", 700: "Bold"}
 _FONT_CACHE = {}
+# Type sizes in px (revision of 8 October 2026).  The 1440-px canvas prints 180 mm wide, so
+# 1 pt = 2.82 px: body text 23 px = 8.1 pt (the size npj Artificial Intelligence asks for at
+# print size), panel titles 26 px = 9.2 pt, subscripts 17 px = 6.0 pt.
+TEXT, TITLE, SUB, SUB_DY = 23, 26, 17, 7
 
 
 def _font(size, weight=400, italic=False):
@@ -48,7 +52,7 @@ def width(segments, size, weight=400):
     return w
 
 
-def text(x, y, segments, size=19, fill=INK, anchor="start", weight=400, baseline=None, rotate=None):
+def text(x, y, segments, size=TEXT, fill=INK, anchor="start", weight=400, baseline=None, rotate=None):
     """SVG <text>.  `segments` is a string or a list of str / (str, opts) pieces; opts:
     italic, weight, size, sub (subscript: smaller and lowered), dx, fill."""
     if isinstance(segments, str):
@@ -80,10 +84,10 @@ def text(x, y, segments, size=19, fill=INK, anchor="start", weight=400, baseline
         if o.get("dx"):
             ta.append(f'dx="{o["dx"]}"')
         if o.get("sub"):
-            ta += [f'font-size="{o.get("size", 14)}"', 'dy="6"' if not lowered else ""]
+            ta += [f'font-size="{o.get("size", SUB)}"', f'dy="{SUB_DY}"' if not lowered else ""]
             lowered = True
         elif lowered:
-            ta.append('dy="-6"'); lowered = False
+            ta.append(f'dy="-{SUB_DY}"'); lowered = False
         if o.get("size") and not o.get("sub"):
             ta.append(f'font-size="{o["size"]}"')
         body.append(f'<tspan {" ".join(t for t in ta if t)}>{escape(s)}</tspan>' if ta else escape(s))
@@ -96,7 +100,7 @@ def _norm(segments, size):
         s, o = (seg, {}) if isinstance(seg, str) else seg
         o = dict(o)
         if o.get("sub"):
-            o.setdefault("size", 14)
+            o.setdefault("size", SUB)
         out.append((s, o))
     return out
 
@@ -113,7 +117,7 @@ def line(x1, y1, x2, y2, stroke, width=1, dash=None):
 
 
 def panel_title(x, y, letter, title):
-    return text(x, y, [(letter, {"weight": 700}), (title, {"weight": 600, "dx": 14})], size=25)
+    return text(x, y, [(letter, {"weight": 700}), (title, {"weight": 600, "dx": 14})], size=TITLE)
 
 
 def svg(w, h, body):

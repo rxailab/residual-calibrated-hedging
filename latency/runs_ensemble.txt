@@ -1,0 +1,16 @@
+jepa cartpole-swingup --iters 2 --arms ens4,ens8
+jepa cartpole-swingup --arms ens4,ens8,ens8k4,ens4k4
+jepa cup-catch --iters 2 --arms ens4,ens8
+jepa cup-catch --arms ens4,ens8,ens8k4,ens4k4
+rssm cartpole-swingup --iters 2 --arms ens4,ens8
+rssm cartpole-swingup --arms ens4,ens8,ens8k4,ens4k4
+rssm cup-catch --iters 2 --arms ens4,ens8
+rssm cup-catch --arms ens4,ens8,ens8k4,ens4k4
+rssm walker-walk --iters 2 --arms ens4,ens8
+rssm walker-walk --arms ens4,ens8,ens8k4,ens4k4
+tdmpc2 cartpole-swingup --iters 2 --arms ens4,ens8
+tdmpc2 cartpole-swingup --arms ens4,ens8,ens8k4,ens4k4
+tdmpc2 cup-catch --iters 2 --arms ens4,ens8
+tdmpc2 cup-catch --arms ens4,ens8,ens8k4,ens4k4
+tdmpc2 walker-walk --iters 2 --arms ens4,ens8
+tdmpc2 walker-walk --arms ens4,ens8,ens8k4,ens4k4

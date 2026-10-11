@@ -7,6 +7,10 @@ already have a result:
 
   results/latency/dmc/<family>/<task>/<run>/pop<P>_it<I>/<arm>.json
 
+Arms beyond the schedules (latency/schedule.py): hcpp<d>k<K> (RCH, latency/hedge.py),
+the delay-error arms (latency/delay_error.py) and pcpp<d>k<K> (particle anchors from the
+RSSM's stochastic transition, latency/ensemble.py).
+
 Presets
   study1  paused1; paused, naive, aligned, cpp at d in {2, 4, 8, 16}; naive,
           aligned, cpp at d = 1 (paused1 is paused at d = 1): 20 arms.
@@ -127,8 +131,15 @@ def run_arm(ad, meta, task, arm, cfg, episodes, workers, dev, amp, T, fake, plan
     t0 = time.time()
     extra = {}
     m = re.fullmatch(r"hcpp(\d+)k(\d+)", arm)
+    mp = re.fullmatch(r"pcpp(\d+)k(\d+)", arm)
     pe = parse_de(arm)
-    if pe:                                      # delay-error model arms (latency/delay_error.py)
+    if mp:                                      # particle anchors, RSSM only (latency/ensemble.py)
+        from latency.ensemble import make_cost_particles
+        d, K = int(mp.group(1)), int(mp.group(2))
+        make_cost = make_cost_particles(ad, cfg.population, dev, amp, d, K, H)
+        sched = f"cpp{d}"
+        extra = {"K": K, "anchors": "particles"}
+    elif pe:                                      # delay-error model arms (latency/delay_error.py)
         kind, d, K, pen, lam = pe
         de = fit_delay_error(ad, meta, d, dev)
         make_cost = make_cost_delay_error(ad, cfg.population, dev, amp, de, kind, K, pen, lam, H)

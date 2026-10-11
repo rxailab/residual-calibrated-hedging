@@ -325,3 +325,67 @@ The proposed method (`latency/delay_error.py`) is:
 | Fixed vs learned spread | +0.008 | -0.020 |
 
 **Decision (the author's choice, option A):** the paper's method is residual-calibrated hedging (RCH): the residual bank, with the learned error model as an optional variant. The hand-off penalty and the risk penalty are reported as failed ablations. The manuscript was rewritten as v4 on 6 October; v3 is in `archive/main_v3_before_rch.tex`.
+
+## 14. Ensemble and particle hedging baselines (11 October 2026, written before the runs)
+
+**Why.** Reviewer feedback on the manuscript: it discusses DATS and CLIS-MPPI but does not compare against a DATS-style ensemble-hedging baseline. The novelty audit also left this comparison as an outstanding check. Requested: committed-prefix planning without hedging, RCH with the model's calibration residuals, and an ensemble- or particle-based hedge. They should use the same environments and delays and be compared at comparable latency and, where feasible, comparable candidate population. The ensemble's extra model, memory and compute requirements should be reported.
+
+**Baselines (code: `latency/ensemble.py`).**
+
+- *Ensemble hedging, DATS-style.* The ensemble is the M = 3 independently trained models of each family-task cell (seeds 0, 1, 2), the same checkpoints as every other study. DATS propagates ensemble particles through the committed actions and averages each candidate's cost over them. Pixel world models trained from different seeds have incompatible latent spaces, so a particle cannot switch members between steps. Each member therefore keeps one particle for the whole rollout (TS-inf propagation):
+  - every member filters its own latent from the same frames at every decision;
+  - at each call, member m rolls the committed prefix through its own dynamics and scores the shared candidates' free part with its own reward head;
+  - a candidate's cost is the mean over members.
+- *Particle hedging, RSSM only* (`pcpp<d>k<K>`, single model, `latency/run_dmc.py`). Anchor 1 is the prediction, as in RCH. Anchors 2..K are sampled from the RSSM's own stochastic transition through the committed actions, instead of being drawn from the residual bank. Only the source of the hedge states differs from RCH. JEPA and TD-MPC2 are deterministic, so this baseline does not apply to them.
+
+**Arms.** All at d in {4, 8}, 50 episodes from seeds 950,000-950,049, planner noise seed 777: the same initial states and planner noise stream as every other arm. Eligible cells: the 8 cells of Study 1.
+
+| Arm | Models | Population | Iterations | Rollouts per candidate per iteration |
+|---|---|---|---|---|
+| CPP: `hcpp{d}k1` (existing) | 24 single models | 512 | 6 | 1 |
+| RCH: `hcpp{d}k4` (existing) | 24 single models | 512 | 6 | 4 (batched) |
+| E-pop: `ens{d}` | 8 ensembles of 3 | 512 | 6 | 3 (one per member) |
+| E-lat: `ens{d}` | 8 ensembles of 3 | 512 | 2 | 3 |
+| E+RCH: `ens{d}k4` (exploratory) | 8 ensembles of 3 | 512 | 6 | 12 |
+| Particles: `pcpp{d}k4` | 9 RSSM models | 512 | 6 | 4 |
+
+- **E-pop** matches the candidate population and the iterations of CPP and RCH.
+- **E-lat** matches their batch-1 latency when the members are evaluated one after another. Each call then makes 3 x 2 = 6 sequential rollouts, the same as one model at 6 iterations. `latency/timing_ensemble.py` checks this.
+- If a fused implementation evaluated the members in one batched call, the ensemble's latency could approach that of one model. E-pop is then also the latency-matched comparison. Both readings are reported.
+
+**Statistics (`latency/analyse_ensemble.py`).**
+
+- Each cell gives paired differences: the ensemble's normalised return on an episode minus each single model's return on the same initial state, a 3 x 50 array.
+- Cells are weighted equally.
+- Intervals come from a hierarchical bootstrap (models within cell, then episodes), with 10,000 resamples.
+- The ensemble is one model set per cell, so its intervals do not include variation between ensembles. This is stated as a limitation.
+- Primary contrasts, two-sided because no direction is claimed, with Holm over the four:
+  1. RCH vs E-pop at d = 4 and 8;
+  2. RCH vs E-lat at d = 4 and 8.
+- Secondary contrasts, two-sided:
+  - E-pop vs CPP and E-lat vs CPP;
+  - E+RCH vs E-pop and E+RCH vs RCH;
+  - particles vs RCH and particles vs CPP, on the 9 RSSM models.
+
+**Interpretation, fixed before the runs.**
+
+- RCH vs E-lat interval includes zero or favours RCH: at matched latency and without extra models, RCH matches or exceeds ensemble hedging.
+- E-pop beats RCH: the paper reports that a three-model ensemble gains more at matched population, at three times the models, training, weight memory and per-call model evaluations. RCH is then positioned as the single-model option, and E+RCH shows whether the two combine.
+- RCH vs E-pop interval includes zero or favours RCH: RCH matches a three-model ensemble with one model.
+- Every outcome is reported in the paper.
+
+**Resource accounting (`latency/timing_ensemble.py`, three cells: RSSM walker, JEPA cup, TD-MPC2 cup).**
+
+- Parameters and GPU weight memory per member.
+- Peak planning memory above the weights at batch size 1.
+- Batch-1 call latency (L50 and L95) of CPP, RCH, E-pop, E-lat, E+RCH and particles.
+- The per-decision cost of filtering one latent against three.
+- The training cost of a member: from the MetricTrust training jobs, 0.8 (TD-MPC2), 1.3 (JEPA) and 2.2 (RSSM) V100 GPU-hours per model.
+
+**Budget.** About 8 GPU-hours on astro: ensemble arms about 6, particles about 1.5, timing about 0.5. Wall-clock about 2-3 hours at the per-user cap.
+
+**Launch.**
+
+- Smoke test: job 25104146.
+- Arrays: `sbatch --array=0-15 --export=ALL,LINES=latency/runs_ensemble.txt slurm/latency_ens.sh`; `sbatch --array=0-8 --export=ALL,LINES=latency/runs_particle.txt slurm/latency_dmc.sh`.
+- Timing: `sbatch slurm/latency_timing_ens.sh`.
