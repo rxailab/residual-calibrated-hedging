@@ -108,6 +108,23 @@ def main():
     pr = out["primary"]
     for k, v in zip(pr, holm([pr[k]["p_two_sided"] for k in pr])):
         pr[k]["p_holm"] = v
+    # post hoc (plan Section 14, written after the primary result): iteration count, and RSSM-only levels;
+    # a separate stream, so the numbers above do not change
+    rng2 = np.random.default_rng(20261012)
+    rssm = lambda c, *k: S(c, *k) if c.startswith("rssm") else None
+    out["posthoc"], out["levels_rssm"] = {}, {}
+    for d in (4, 8):
+        out["levels_rssm"][f"d{d}"] = {k: level(rssm, P6, a) for k, a in (("CPP", f"hcpp{d}k1"), ("RCH", f"hcpp{d}k4"),
+                                                                           ("particles", f"pcpp{d}k4"))}
+        ph = out["posthoc"]
+        ph[f"Elat_vs_Epop_d{d}"] = contrast((E, P2, f"ens{d}"), (E, P6, f"ens{d}"), rng2)
+        if level(S, P2, f"hcpp{d}k4") and level(S, P2, f"hcpp{d}k4")["cells"] == len(CELLS):
+            out["levels"][f"d{d}"]["RCH it2"] = level(S, P2, f"hcpp{d}k4")
+            out["levels"][f"d{d}"]["CPP it2"] = level(S, P2, f"hcpp{d}k1")
+            ph[f"RCHit2_vs_Elat_d{d}"] = contrast((S, P2, f"hcpp{d}k4"), (E, P2, f"ens{d}"), rng2)
+            ph[f"RCHit2_vs_RCHit6_d{d}"] = contrast((S, P2, f"hcpp{d}k4"), (S, P6, f"hcpp{d}k4"), rng2)
+            ph[f"CPPit2_vs_CPPit6_d{d}"] = contrast((S, P2, f"hcpp{d}k1"), (S, P6, f"hcpp{d}k1"), rng2)
+            ph[f"RCHit2_vs_CPPit2_d{d}"] = contrast((S, P2, f"hcpp{d}k4"), (S, P2, f"hcpp{d}k1"), rng2)
     tim = {}
     for f in sorted((RESULTS / "latency" / "timing_ensemble").glob("*/*.json")):
         tim[f"{f.parent.name}/{f.stem}"] = json.load(open(f))
@@ -115,7 +132,8 @@ def main():
     (RESULTS / "latency" / "ensemble.json").write_text(json.dumps(out, indent=1))
     for d, lv in out["levels"].items():
         print(d, "  ".join(f"{k} {v['mean']:.3f} ({v['cells']})" for k, v in lv.items() if v))
-    for sect in ("primary", "secondary"):
+    print("RSSM only", out["levels_rssm"])
+    for sect in ("primary", "secondary", "posthoc"):
         print(sect)
         for k, v in out[sect].items():
             ph = f", Holm p = {v['p_holm']:.4f}" if "p_holm" in v else ""

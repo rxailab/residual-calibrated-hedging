@@ -414,3 +414,12 @@ The proposed method (`latency/delay_error.py`) is:
   - RCH(it2) vs E-lat;
   - RCH(it2) vs RCH(it6);
   - CPP(it2) vs CPP(it6).
+
+**Second post-hoc check, written after the primary result and before its runs.** Single models vary widely within a cell; for example, the three JEPA cup models score 0.61, 0.73 and 0.37 at d = 4. The ensemble roughly reaches the best member, so part of its gain may be better modelling rather than better delay compensation.
+
+- Arms: `enspaused{1,4,8}`, the ensemble with the simulator paused while it plans (8 cells; population 512; 6 and 2 iterations; `latency/runs_ensemble_paused.txt`).
+- Reported quantities:
+  - the ensemble's gain without delay, E-paused1 vs the single models' paused1;
+  - the ensemble's own feedback-rate and mismatch losses, F_E(d) = R_E(paused1) - R_E(paused_d) and M_E(d) = R_E(paused_d) - R_E(ens_d);
+  - the share of each planner's mismatch loss that it removes.
+- Post-hoc, with no correction.

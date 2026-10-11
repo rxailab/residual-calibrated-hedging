@@ -22,6 +22,9 @@ Arms (ensemble driver, this file):
   ens<d>        ensemble committed-prefix planning, one particle per member
   ens<d>k<K>    ensemble + RCH: each member hedges over K anchors from its own
                 residual bank (exploratory)
+  enspaused<r>  the ensemble with the simulator paused while it plans, r actions
+                per plan (post hoc: the ensemble's gain without delay, and its own
+                feedback-rate and mismatch losses)
 Output: results/latency/ensemble/<family>/<task>/pop<P>_it<I>/<arm>.json
 
 The particle baseline is a single-model arm, pcpp<d>k<K>, run by
@@ -63,8 +66,14 @@ def member_ckpts(ckpt_root, family, task, seeds=SEEDS):
 
 
 def parse(arm):
+    """-> (schedule, d, K)."""
+    m = re.fullmatch(r"enspaused(\d+)", arm)
+    if m:
+        return f"paused{m.group(1)}", int(m.group(1)), 1
     m = re.fullmatch(r"ens(\d+)(?:k(\d+))?", arm)
-    return (int(m.group(1)), int(m.group(2) or 1)) if m else None
+    if m:
+        return f"cpp{m.group(1)}", int(m.group(1)), int(m.group(2) or 1)
+    raise ValueError(f"bad arm {arm!r}")
 
 
 class EnsembleBatch:
@@ -174,7 +183,7 @@ def make_cost_particles(ad, P, dev, amp, d, K, H, gen_seed=5, batch_anchors=Fals
 
 
 def run_arm(ads, metas, task, arm, cfg, episodes, workers, dev, amp, T, fake, H, planner_seed=777, seed0=950_000):
-    d, K = parse(arm)
+    sched, d, K = parse(arm)
     A = EV.task_data(task).act_dim
     seeds = list(range(seed0, seed0 + episodes))
     banks = [residual_bank(ad, task, d) for ad in ads] if K > 1 else None
@@ -184,7 +193,7 @@ def run_arm(ads, metas, task, arm, cfg, episodes, workers, dev, amp, T, fake, H,
     timer = Timer(dev)
     t0 = time.time()
     try:
-        n_calls = run_schedule(f"cpp{d}", H, T, planner, make_cost, env, A, timer)
+        n_calls = run_schedule(sched, H, T, planner, make_cost, env, A, timer)
     finally:
         env.close()
     pc = np.asarray(timer.per_call)
