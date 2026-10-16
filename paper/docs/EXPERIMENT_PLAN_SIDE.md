@@ -539,3 +539,42 @@ Each has fresh data and a confirmatory contrast fixed here.
 - 15A: about 3 GPU-hours.
 - 15B: about 20-40 GPU-hours on astro after the harness is built, with 77 GiB of public data.
 - 15C: about 4 hours of an exclusive V100.
+
+### Amendment to 15B (16 October 2026, after the harness checks and before any confirmatory run)
+
+**Harness checks** (not results):
+- `latency/lewm.py` reproduces LeWM's latent cost to 9e-5 (cost scale 270).
+- Committed-prefix planning equals the cost of the concatenated sequence, and RCH with zero anchors equals committed-prefix planning, both to the same tolerance.
+- On LeWM's own protocol (`latency/lewm_validate.py`; seed 42, 50 PushT episodes, goal offset 25, budget 50), LeWM's reference policy succeeded 0.92. LeWM reports about 0.90. Our policy replanning every 5 decisions succeeded 0.98.
+
+**Why the design changes.** Replanning every decision succeeded only 0.32. LeWM's cost scores only the final predicted embedding, 5 decisions ahead, so replanning every decision keeps deferring arrival at the goal. The pre-registered change ("replans every model step") is therefore withdrawn. A 10-episode smoke test had run the withdrawn design; it is not used.
+
+**Amended design.** LeWM's planner and receding horizon are kept: each plan's 5 blocks are executed before the next plan takes over.
+- paused5: the simulator waits for each call. This is LeWM's own evaluation.
+- Asynchronous schedules: a call takes d decisions, so the next call is issued d decisions before the current plan runs out.
+  - cpp_d and rch_d take the d remaining blocks as the committed prefix, and the first 5 free blocks are executed.
+  - aligned_d plans d + 5 blocks from the observation and executes blocks d:d+5.
+  - naive_d executes blocks 0:5.
+- Every schedule therefore replans every 5 decisions. paused5 minus an asynchronous schedule is pure mismatch loss, with no feedback-rate loss.
+- With 5 blocks per plan and calls of d decisions, the latency schedules of `latency/schedule.py` are the case where both equal d.
+
+**Delays: d in {2, 4} decisions.** LeWM's call takes about 1 s (0.98 s reported), so these are the delays of PushT, at 0.5 s per decision, and OGBench Cube, at about 0.25 s per decision. Reacher's decision is 0.1 s, so its delay of about 10 decisions exceeds a plan; it is run at the same two delays.
+
+**Settings, 200 episodes per task and setting, seed 950,000:**
+- **S2, long horizon (confirmatory):** goal offset 50, budget 100; three asynchronous calls per episode.
+- **S1, LeWM's protocol (secondary):** goal offset 25, budget 50; one asynchronous call per episode, and paused success of 0.92-0.98 leaves little room.
+
+**Confirmatory:** success(rch_d) - success(cpp_d) in S2, pooled over the three tasks with equal weight, at d = 2 and d = 4. One-sided, Holm over the two delays, paired bootstrap over episodes within task (10,000 resamples).
+
+**Secondary:**
+- The same contrast in S1.
+- cpp_d vs aligned_d.
+- Mismatch loss, paused5 - X_d.
+- Per-task results.
+- Batch-1 call latency.
+
+**Arms per task and setting:** paused5, naive{2,4}, aligned{2,4}, cpp{2,4} and rch{2,4}k4.
+
+**Analysis:** `latency/analyse_lewm.py`.
+
+**Budget:** about 10-20 GPU-hours on astro.

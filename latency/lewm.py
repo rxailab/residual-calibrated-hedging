@@ -11,23 +11,31 @@ normalised action space), batched over environments, with horizon H = 5 blocks a
 warm start shifted by the blocks executed.  The cost is LeWM's: the squared distance
 between the predicted embedding at the end of the candidate and the goal embedding.
 
-Arms (latency/schedule.py semantics):
-  paused<r>   the simulator waits; a new plan every r decisions.
-  aligned<d>  plan from the observation at the start of a call, candidates d + H long,
-              execute blocks d:2d after the call.
-  cpp<d>      committed prefix: candidates [committed d blocks, free H blocks].
+Each plan is executed for r = 5 blocks (--period; LeWM's receding horizon, which executes the
+whole optimised sequence), so every schedule replans every r decisions.  Arms:
+  paused<p>   the simulator waits for each call; a new plan every p decisions (paused5 is
+              LeWM's own evaluation).
+  aligned<d>  calls take d decisions: the next call is issued d decisions before the current
+              plan runs out, from the observation at that decision, with candidates d + H
+              long; blocks d:d+r are executed after the call.
+  naive<d>    the same plan, blocks 0:r executed.
+  cpp<d>      committed prefix: the d blocks that execute during the call are fixed in every
+              candidate, [committed d blocks, free H blocks]; the free blocks 0:r are executed.
   rch<d>k<K>  cpp with residual-calibrated hedging: the embedding after the prefix is
               replaced by K anchors, the prediction plus K - 1 residuals drawn from a bank
               of LeWM's own d-step errors on dataset windows, and a candidate's cost is the
               mean over anchors (all anchors in one batched call).
-Asynchronous arms start with one plan with the simulator paused, whose first d blocks are
-committed for the first interval.
+The first plan is made with the simulator paused (the robot at rest before the episode).
+With r = d these are the schedules of latency/schedule.py.  Plan Section 15B, amendment of
+16 October 2026: replanning every decision, as first planned, defeats LeWM's terminal-only
+cost (paused1 succeeds 0.32 against 0.98 for paused5 on LeWM's own protocol;
+latency/lewm_validate.py).
 
 Residual bank: 512 windows of the task's dataset, from episodes not used for evaluation;
 r = enc(o_{t+5d}) - rollout(z_t, a_{t:t+5d}), with the recorded actions normalised and
 blocked as in LeWM's training.
 
-Output: results/latency/lewm/<task>/<arm>.json (per-episode successes, timings).
+Output: results/latency/lewm/r<period>_g<goal offset>_b<budget>/<task>/<arm>.json.
 Run with the rch-lewm env: STABLEWM_HOME=/scratch/hpc/11/xiar3/lewm MUJOCO_GL=egl.
 """
 import argparse
@@ -164,11 +172,18 @@ def cem(cost, mean, gen, dev):
 
 
 # ------------------------------------------------------------------ policy
+def shift(mu, k):
+    """Warm start for a plan that starts k blocks later (latency/schedule.py)."""
+    k = min(k, mu.shape[1])
+    return torch.cat([mu[:, k:], torch.zeros_like(mu[:, :k])], 1)
+
+
 class DelayPolicy(swm.policy.BasePolicy):
     """Delay schedules over decisions of BLOCK environment steps, all environments in lockstep."""
 
-    def __init__(self, model, arm, process, transform, bank=None, seed=777, dev="cuda"):
+    def __init__(self, model, arm, process, transform, bank=None, seed=777, dev="cuda", period=5):
         super().__init__()
+        self.r = period
         self.type = "world_model"
         self.model, self.dev = model, dev
         self.kind, self.d, self.K = parse(arm)
@@ -184,7 +199,7 @@ class DelayPolicy(swm.policy.BasePolicy):
         self.adim = env.single_action_space.shape[-1]
         self.step = 0
         self.queue = []                        # blocks (E, 10) for the coming decisions
-        self.committed = None
+        self.pending = None                    # the plan of the call in flight
         self.warm = torch.zeros((self.n, H, self.adim * BLOCK), device=self.dev)
 
     def _plan(self, info, prefix=None, length=H):
@@ -205,29 +220,36 @@ class DelayPolicy(swm.policy.BasePolicy):
         return mu
 
     def _decide(self, info):
-        k, d = self.step // BLOCK, self.d
+        """Schedules with plans of r = self.r blocks (LeWM's receding horizon) and calls of d
+        decisions.  paused<p>: the simulator waits, a new plan every p decisions.  Asynchronous:
+        the next call is issued d decisions before the current plan runs out, from the
+        observation at that decision; cpp and rch take the d remaining blocks as the committed
+        prefix and return a plan of H free blocks, of which r are executed; aligned plans d + H
+        blocks from the observation and executes blocks d:d+r; naive executes blocks 0:r.  With
+        r = d this is latency/schedule.py.  The first plan is made with the simulator paused."""
+        k, d, r = self.step // BLOCK, self.d, self.r
         if self.kind == "paused":
             if not self.queue:
                 mu = self._plan(info)
                 self.queue = list(mu[:, :d].unbind(1))
-                self.warm = torch.cat([mu[:, d:], torch.zeros_like(mu[:, :d])], 1)
+                self.warm = shift(mu, d)
             return
         if k == 0:                                                   # pre-episode plan, simulator paused
             mu0 = self._plan(info)
-            self.committed = mu0[:, :d]
-            pad = torch.zeros_like(mu0[:, :d])
-            # schedule.py: shift(mu0, d) for cpp, pad(mu0, d) for aligned and naive
-            self.warm = torch.cat([mu0[:, d:], pad], 1) if self.kind in ("cpp", "rch") else torch.cat([mu0, pad], 1)
-        if not self.queue:                                           # start of an interval: issue a call
+            self.queue = list(mu0[:, :r].unbind(1))
+            self.pending = None
+            # the next call's first optimised block: plan start (cpp, rch) or issue time (aligned, naive)
+            self.warm = shift(mu0, r) if self.kind in ("cpp", "rch") else shift(mu0, r - d)
+        if not self.queue and self.pending is not None:              # the call issued d decisions ago returns
+            self.queue, self.pending = list(self.pending.unbind(1)), None
+        if len(self.queue) == d and self.pending is None:            # issue the next call
             if self.kind in ("cpp", "rch"):
-                mu = self._plan(info, prefix=self.committed)
-                nxt = mu[:, :d]
+                mu = self._plan(info, prefix=torch.stack(self.queue, 1))
+                self.pending = mu[:, :r]
             else:
                 mu = self._plan(info, length=d + H)
-                nxt = mu[:, d:2 * d] if self.kind == "aligned" else mu[:, :d]
-            self.queue = list(self.committed.unbind(1))              # executed during the call
-            self.committed = nxt
-            self.warm = torch.cat([mu[:, d:], torch.zeros_like(mu[:, :d])], 1)   # shift(mu, d), full length
+                self.pending = mu[:, d:d + r] if self.kind == "aligned" else mu[:, :r]
+            self.warm = shift(mu, r)
 
     def get_action(self, info_dict, **kwargs):
         info = self._prepare_info(info_dict)
@@ -268,10 +290,10 @@ def episode_lengths(dataset):
     return col, ep, step, L + 1
 
 
-def eval_starts(dataset, n, seed):
+def eval_starts(dataset, n, seed, goal_offset=GOAL_OFFSET):
     """LeWM's eval.py sampling of start rows, with our seed (same rule, vectorised)."""
     col, ep, step, L = episode_lengths(dataset)
-    max_start = L[ep] - GOAL_OFFSET - 1
+    max_start = L[ep] - goal_offset - 1
     valid = np.nonzero(step <= max_start)[0]
     g = np.random.default_rng(seed)
     rows = np.sort(valid[g.choice(len(valid) - 1, size=n, replace=False)])
@@ -334,6 +356,9 @@ def main():
     ap.add_argument("--episodes", type=int, default=200)
     ap.add_argument("--chunk", type=int, default=50, help="environments per World")
     ap.add_argument("--seed", type=int, default=SEED0)
+    ap.add_argument("--period", type=int, default=5, help="blocks per plan (LeWM's receding horizon)")
+    ap.add_argument("--goal-offset", type=int, default=GOAL_OFFSET)
+    ap.add_argument("--budget", type=int, default=BUDGET)
     ap.add_argument("--out", default=str(OUT))
     a = ap.parse_args()
     dev = "cuda"
@@ -342,8 +367,8 @@ def main():
     model = load_model(a.task, dev)
     dataset = load_dataset(a.task)
     process = processors(dataset, c["keys"])
-    eps, starts = eval_starts(dataset, a.episodes, a.seed)
-    od = pathlib.Path(a.out) / a.task
+    eps, starts = eval_starts(dataset, a.episodes, a.seed, a.goal_offset)
+    od = pathlib.Path(a.out) / f"r{a.period}_g{a.goal_offset}_b{a.budget}" / a.task
     od.mkdir(parents=True, exist_ok=True)
     banks = {}
     for arm in a.arms.split(","):
@@ -360,18 +385,19 @@ def main():
         for i in range(0, a.episodes, a.chunk):
             sl = slice(i, i + a.chunk)
             n = len(eps[sl])
-            world = swm.World(**c["world"], num_envs=n, max_episode_steps=2 * BUDGET, image_shape=(224, 224))
+            world = swm.World(**c["world"], num_envs=n, max_episode_steps=2 * a.budget, image_shape=(224, 224))
             pol = DelayPolicy(model, arm, process, {"pixels": img_transform(), "goal": img_transform()}, bank,
-                              seed=777 + i, dev=dev)
+                              seed=777 + i, dev=dev, period=a.period)
             world.set_policy(pol)
-            m = world.evaluate(dataset=dataset, start_steps=list(map(int, starts[sl])), goal_offset=GOAL_OFFSET,
-                               eval_budget=BUDGET, episodes_idx=list(map(int, eps[sl])), callables=c["callables"])
+            m = world.evaluate(dataset=dataset, start_steps=list(map(int, starts[sl])), goal_offset=a.goal_offset,
+                               eval_budget=a.budget, episodes_idx=list(map(int, eps[sl])), callables=c["callables"])
             succ += np.asarray(m["episode_successes"], bool).tolist()
             call_s += pol.call_s
             world.close()
         r = {"task": a.task, "arm": arm, "d": d, "K": K, "successes": succ, "success_rate": float(np.mean(succ)),
              "episodes": len(succ), "episode_idx": list(map(int, eps)), "start_steps": list(map(int, starts)),
-             "seed": a.seed, "H": H, "block": BLOCK, "goal_offset": GOAL_OFFSET, "budget": BUDGET, "cem": CEM,
+             "seed": a.seed, "H": H, "block": BLOCK, "period": a.period, "goal_offset": a.goal_offset,
+             "budget": a.budget, "cem": CEM,
              "calls": len(call_s), "call_s_mean_batch": float(np.mean(call_s)), "chunk": a.chunk,
              "bank_n": None if bank is None else len(bank),
              "bank_rms": None if bank is None else float(np.sqrt((bank ** 2).sum(1).mean())),
