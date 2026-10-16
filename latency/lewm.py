@@ -181,9 +181,11 @@ def shift(mu, k):
 class DelayPolicy(swm.policy.BasePolicy):
     """Delay schedules over decisions of BLOCK environment steps, all environments in lockstep."""
 
-    def __init__(self, model, arm, process, transform, bank=None, seed=777, dev="cuda", period=5):
+    def __init__(self, model, arm, process, transform, bank=None, seed=777, dev="cuda", period=5, handover=None):
         super().__init__()
         self.r = period
+        # handover: (E, d, 10) normalised blocks of recorded actions that execute during the first call
+        self.handover = None if handover is None else torch.as_tensor(handover, dtype=torch.float32, device=dev)
         self.type = "world_model"
         self.model, self.dev = model, dev
         self.kind, self.d, self.K = parse(arm)
@@ -228,13 +230,16 @@ class DelayPolicy(swm.policy.BasePolicy):
         blocks from the observation and executes blocks d:d+r; naive executes blocks 0:r.  With
         r = d this is latency/schedule.py.  The first plan is made with the simulator paused."""
         k, d, r = self.step // BLOCK, self.d, self.r
+        if k == 0 and self.handover is not None:                     # moving start: the system is executing
+            self.queue = list(self.handover.unbind(1))               # recorded actions when the planner starts
+            self.pending = None
         if self.kind == "paused":
             if not self.queue:
                 mu = self._plan(info)
                 self.queue = list(mu[:, :d].unbind(1))
                 self.warm = shift(mu, d)
             return
-        if k == 0:                                                   # pre-episode plan, simulator paused
+        if k == 0 and self.handover is None:                         # pre-episode plan, simulator paused
             mu0 = self._plan(info)
             self.queue = list(mu0[:, :r].unbind(1))
             self.pending = None
@@ -333,6 +338,19 @@ def residual_bank(model, dataset, task, d, exclude, process, dev, n=512, seed=11
     return np.concatenate(out)[:n]
 
 
+def handover_blocks(dataset, eps, starts, d, process):
+    """(E, d, 10): the recorded actions of each evaluation episode from its start step, normalised
+    and blocked as LeWM's actions."""
+    chunks = dataset.load_chunk(np.asarray(eps), np.asarray(starts), np.asarray(starts) + BLOCK * d)
+    out = []
+    for ch in chunks:
+        a = ch["action"][:BLOCK * d]
+        a = a.numpy() if torch.is_tensor(a) else np.asarray(a)
+        assert not np.isnan(a).any(), "hand-over actions must lie inside the episode"
+        out.append(process["action"].transform(a).reshape(d, -1))
+    return np.stack(out)
+
+
 def load_model(task, dev):
     m = swm.wm.utils.load_pretrained(str(LEWM / TASKS[task]["ckpt"]))
     m = m.to(dev).eval()
@@ -359,6 +377,8 @@ def main():
     ap.add_argument("--period", type=int, default=5, help="blocks per plan (LeWM's receding horizon)")
     ap.add_argument("--goal-offset", type=int, default=GOAL_OFFSET)
     ap.add_argument("--budget", type=int, default=BUDGET)
+    ap.add_argument("--handover", type=int, default=0,
+                    help="moving start: the first N decisions execute the recorded actions (Section 15B, amendment 2)")
     ap.add_argument("--out", default=str(OUT))
     a = ap.parse_args()
     dev = "cuda"
@@ -368,7 +388,7 @@ def main():
     dataset = load_dataset(a.task)
     process = processors(dataset, c["keys"])
     eps, starts = eval_starts(dataset, a.episodes, a.seed, a.goal_offset)
-    od = pathlib.Path(a.out) / f"r{a.period}_g{a.goal_offset}_b{a.budget}" / a.task
+    od = pathlib.Path(a.out) / (f"r{a.period}_g{a.goal_offset}_b{a.budget}" + (f"_h{a.handover}" if a.handover else "")) / a.task
     od.mkdir(parents=True, exist_ok=True)
     banks = {}
     for arm in a.arms.split(","):
@@ -385,9 +405,14 @@ def main():
         for i in range(0, a.episodes, a.chunk):
             sl = slice(i, i + a.chunk)
             n = len(eps[sl])
+            ho = None
+            if a.handover:
+                if kind != "paused" and d != a.handover:
+                    raise ValueError("the hand-over lasts one call: --handover must equal the arm's delay")
+                ho = handover_blocks(dataset, eps[sl], starts[sl], a.handover, process)
             world = swm.World(**c["world"], num_envs=n, max_episode_steps=2 * a.budget, image_shape=(224, 224))
             pol = DelayPolicy(model, arm, process, {"pixels": img_transform(), "goal": img_transform()}, bank,
-                              seed=777 + i, dev=dev, period=a.period)
+                              seed=777 + i, dev=dev, period=a.period, handover=ho)
             world.set_policy(pol)
             m = world.evaluate(dataset=dataset, start_steps=list(map(int, starts[sl])), goal_offset=a.goal_offset,
                                eval_budget=a.budget, episodes_idx=list(map(int, eps[sl])), callables=c["callables"])
@@ -396,7 +421,8 @@ def main():
             world.close()
         r = {"task": a.task, "arm": arm, "d": d, "K": K, "successes": succ, "success_rate": float(np.mean(succ)),
              "episodes": len(succ), "episode_idx": list(map(int, eps)), "start_steps": list(map(int, starts)),
-             "seed": a.seed, "H": H, "block": BLOCK, "period": a.period, "goal_offset": a.goal_offset,
+             "seed": a.seed, "H": H, "block": BLOCK, "period": a.period, "handover": a.handover,
+             "goal_offset": a.goal_offset,
              "budget": a.budget, "cem": CEM,
              "calls": len(call_s), "call_s_mean_batch": float(np.mean(call_s)), "chunk": a.chunk,
              "bank_n": None if bank is None else len(bank),
