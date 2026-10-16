@@ -608,3 +608,42 @@ The setting was chosen for its delay sensitivity, judged by paused5 against naiv
 - Batch-1 call latency.
 
 **Runs.** `latency/runs_lewm.txt`: six hand-over jobs (task x d) and three S1 jobs.
+
+### Section 15 results (16 October 2026)
+
+**15A, d = 16, 24 models (`results/latency/d16.json`): supported.**
+- R(K=4) - R(K=1) = +0.023 [+0.004, +0.042], one-sided p = 0.0094.
+- Mismatch loss falls from 0.084 to 0.061.
+- The gain is concentrated: JEPA cup +0.147, TD-MPC2 cup +0.030, RSSM walker +0.012; the other cells change by less than 0.006.
+
+**15C, real time, 6 cup-catch models (`results/latency/wallclock_v2.json`): not supported.**
+- rch - cpp = +0.074 [-0.029, +0.181], one-sided p = 0.082.
+- By model: JEPA +0.107, +0.039, +0.306; TD-MPC2 -0.037, -0.101, +0.129.
+- Secondary: cpp - aligned +0.118 [+0.034, +0.205]; rch - aligned +0.192 [+0.102, +0.284].
+- Calibrated d: 6 for JEPA, 5 for TD-MPC2, one decision above the start-up estimate. There were no underruns, and no call exceeded d_est by more than one decision.
+
+**15B, LeWM, hand-over setting, 200 episodes per task and arm, seed 951,000 (`results/latency/lewm_summary.json`): not supported.**
+
+| | d = 2 | d = 4 |
+|---|---|---|
+| rch - cpp (Holm) | +0.002 [-0.027, +0.030], p = 0.48 | +0.015 [-0.013, +0.043], p = 0.34 |
+| Per task (pusht / cube / reacher) | +0.005 / -0.055 / +0.055 | -0.010 / -0.010 / +0.065 |
+| cpp - aligned | +0.303 [+0.262, +0.345] | +0.333 [+0.292, +0.375] |
+
+- Success by arm: PushT d = 2: paused5 0.90, naive 0.08, aligned 0.31, cpp 0.835, rch 0.84.
+- Mismatch loss paused5 - cpp:
+  - PushT: 0.065 and 0.035;
+  - Cube: 0.010 and -0.015;
+  - Reacher: -0.23 and -0.25. Committed-prefix planning beats the paused reference there. The likely cause is that the prefix rollout gives LeWM's predictor three frames of context, while the paused planner plans from one frame (LeWM's history length 1), so the paused reference is not an exact-state reference for LeWM.
+- S1 (LeWM's protocol): every asynchronous arm is within 0.03 of paused5; rch - cpp = +0.002 at both delays.
+
+**LeWM batch-1 latency (L40S, PushT; first timing run, job 25235800):**
+- paused and cpp: 339-345 ms;
+- rch with K = 4: 1148-1162 ms.
+
+Unlike the smaller latent models, LeWM's transformer predictor makes four anchors cost 3.4x the call time. The cube and reacher timing failed (hard-coded action dimension) and are rerun as job 25243321.
+
+**Reading (written after the results).**
+- RCH's gains are confined to models and tasks with a large value-aligned mismatch: the JEPA and TD-MPC2 cup-catch cells and RSSM walker.
+- On a third-party JEPA world model, committed-prefix planning leaves little mismatch, and hedging adds nothing.
+- In real time the estimate is positive but not significant.

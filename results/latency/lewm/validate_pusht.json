@@ -1,0 +1,13 @@
+{
+ "task": "pusht",
+ "episodes": 50,
+ "seed": 42,
+ "reference_success": 0.92,
+ "reference_s": 31.512999057769775,
+ "paused5_success": 0.98,
+ "paused5_s": 34.06669902801514,
+ "paused5_call_s_mean": 13.510134555501281,
+ "paused1_success": 0.32,
+ "paused1_s": 145.4653835296631,
+ "paused1_call_s_mean": 13.661095630002091
+}
