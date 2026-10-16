@@ -696,3 +696,23 @@ The studies below address the first two directly. The third gap is addressed ind
 - 16B: collection about 5 GPU-hours, training about 40, closed loop about 15.
 - 16C: about 5.
 - Wall-clock about one to two days.
+
+### Section 16 results so far (16 October 2026)
+
+**16A, powered real-time replication (`results/latency/wallclock_v3.json`): not supported at alpha = 0.05.**
+- rch - cpp = +0.071 [-0.013, +0.150], one-sided p = 0.051, on 100 new episodes per arm and model.
+- The estimate agrees with 15C (+0.074). Pooled with the 15C episodes (secondary): +0.072 [-0.001, +0.138].
+- By model: JEPA +0.231, -0.014, +0.186; TD-MPC2 +0.115, -0.021, -0.070.
+- Secondary: rch - aligned +0.135 [+0.063, +0.211]; cpp - aligned +0.064 [+0.010, +0.117].
+- Calibrated d: 6 for JEPA and 5 for TD-MPC2; no underruns.
+
+**16C retrodiction on the original eligible cells (`results/latency/diag16.json`).**
+- Spearman(V, closed-loop gain) = +0.69, one-sided permutation p = 0.002, over 16 (cell, d) pairs.
+- Misses: TD-MPC2 cartpole at d = 4 (V 0.48, gain 0.00) and TD-MPC2 walker (V 0.10-0.14, gain 0.00).
+- This is a retrodiction; the prediction for the new tasks is pending.
+
+**16B pipeline.**
+- Data collected and packed.
+- Normalisation (eps 0 / eps 1 tiers): reacher-easy 972.9 / 57.1, cheetah-run 816.0 / 6.6, finger-spin 820.9 / 1.1.
+- Agent choice by the pre-set rule: cheetah-run's expert tier uses MPC (prior 494 against MPC 850).
+- Training, checkpoint copy, diagnostics and evaluation are chained (jobs 25243926-7, 25246742-4).
