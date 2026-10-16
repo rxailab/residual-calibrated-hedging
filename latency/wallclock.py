@@ -156,6 +156,8 @@ def main():
     ap.add_argument("--T", type=int, default=500)
     ap.add_argument("--fake-render", action="store_true")
     ap.add_argument("--calibrate", action="store_true", help="re-set d_est from one unscored real-time episode")
+    ap.add_argument("--seed0", type=int, default=SEED0, help="first initial-state seed (16A: 950,100)")
+    ap.add_argument("--out-sub", default=None, help="results/latency/<out-sub> (default wallclock or wallclock_v2)")
     a = ap.parse_args()
     dev = "cuda" if torch.cuda.is_available() else "cpu"
     if dev == "cuda":
@@ -197,7 +199,7 @@ def main():
               flush=True)
         d_est = d_cal
     bank = residual_bank(ad, task, d_est) if "rch" in arms else None
-    sub = "wallclock_v2" if a.calibrate else "wallclock"
+    sub = a.out_sub or ("wallclock_v2" if a.calibrate else "wallclock")
     od = RESULTS / "latency" / sub / f"{meta['family']}_{task}_{meta['run']}" / f"pop{a.pop}_it{a.iters}"
     od.mkdir(parents=True, exist_ok=True)
     for arm in arms:
@@ -206,8 +208,8 @@ def main():
             print("skip (done)", f); continue
         eps = []
         for i in range(a.episodes):
-            eps.append(episode(ad, task, SEED0 + i, arm, cfg, d_est, a.T, dev, a.fake_render, bank))
-            print(f"{arm} seed {SEED0 + i}: return {eps[-1]['return']:.1f}, calls {eps[-1]['n_calls']}, "
+            eps.append(episode(ad, task, a.seed0 + i, arm, cfg, d_est, a.T, dev, a.fake_render, bank))
+            print(f"{arm} seed {a.seed0 + i}: return {eps[-1]['return']:.1f}, calls {eps[-1]['n_calls']}, "
                   f"median {eps[-1]['call_decisions_median']:.1f} decisions, underruns {eps[-1]['underruns']}",
                   flush=True)
         r = {"arm": arm, "d_est": d_est, "calibration": calib, "startup_L50_s": L50, "startup_L95_s": L95, "dt": DT[task],
