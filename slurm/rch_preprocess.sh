@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=rch-prep
 #SBATCH --partition=serial
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=1
 #SBATCH --mem=24G
 #SBATCH --time=04:00:00
 #SBATCH --output=/scratch/hpc/11/xiar3/MetricTrust/runs/rch-prep-%A_%a.out

@@ -31,6 +31,9 @@ sys.path.insert(0, str(ROOT))
 from paths import RESULTS  # noqa: E402
 
 REF = {"cartpole-swingup": (880, 49), "walker-walk": (985, 40), "cup-catch": (981, 55)}
+_NEW = ROOT / "results" / "latency" / "newtask_refs.json"          # Section 16B (latency/newtask_refs.py)
+if _NEW.exists():
+    REF.update({k: tuple(v) for k, v in json.load(open(_NEW)).items()})
 FAMILIES = ("rssm", "jepa", "tdmpc2")
 TASKS = tuple(REF)
 DS = (1, 2, 4, 8, 16)
