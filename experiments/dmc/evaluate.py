@@ -98,8 +98,10 @@ from experiments.dmc import u2_policies as U2P
 from experiments.dmc.u2_policies import pool
 from paths import RESULTS
 
-DATA = pathlib.Path("/scratch/hpc/11/xiar3/MetricTrust/data/dmc64")
-CKPT = pathlib.Path("/scratch/hpc/11/xiar3/MetricTrust/checkpoints/dmc")
+# RCH_SCRATCH (side paper Section 16B) points the new tasks' data and checkpoints elsewhere; default unchanged
+_SCR = pathlib.Path(os.environ.get("RCH_SCRATCH", "/scratch/hpc/11/xiar3/MetricTrust"))
+DATA = _SCR / "data" / "dmc64"
+CKPT = _SCR / "checkpoints" / "dmc"
 PROG = RESULTS / "progress" / "dmc_eval"
 N_TRAIN, N_EP = 1900, 2000                    # episodes 1900-1999 are D_eval
 TASKS = ("cartpole-swingup", "walker-walk", "cup-catch")
@@ -115,7 +117,11 @@ ALPHAS = np.logspace(-2, 6, 9)
 # qpos coordinates a camera cannot identify (design note 3), by qpos index
 TASK_STATE = {"cartpole-swingup": {"wind": (1,), "drop": ()},   # pole hinge_1 (unlimited)
               "walker-walk": {"wind": (2,), "drop": (1,)},       # rooty (unlimited); rootx (trackcom camera)
-              "cup-catch": {"wind": (), "drop": ()}}             # four slides, fixed camera
+              "cup-catch": {"wind": (), "drop": ()},             # four slides, fixed camera
+              # side paper Section 16B
+              "reacher-easy": {"wind": (0,), "drop": ()},        # shoulder (unlimited); wrist limited
+              "cheetah-run": {"wind": (2,), "drop": (0,)},       # rooty (unlimited); rootx (tracking camera)
+              "finger-spin": {"wind": (2,), "drop": ()}}         # the spinner hinge (unlimited)
 
 
 @dataclasses.dataclass

@@ -1,0 +1,18 @@
+--task reacher-easy --family rssm --seed 0
+--task reacher-easy --family jepa --seed 0 --arch hist3
+--task reacher-easy --family rssm --seed 1
+--task reacher-easy --family jepa --seed 1 --arch hist3
+--task reacher-easy --family rssm --seed 2
+--task reacher-easy --family jepa --seed 2 --arch hist3
+--task cheetah-run --family rssm --seed 0
+--task cheetah-run --family jepa --seed 0 --arch hist3
+--task cheetah-run --family rssm --seed 1
+--task cheetah-run --family jepa --seed 1 --arch hist3
+--task cheetah-run --family rssm --seed 2
+--task cheetah-run --family jepa --seed 2 --arch hist3
+--task finger-spin --family rssm --seed 0
+--task finger-spin --family jepa --seed 0 --arch hist3
+--task finger-spin --family rssm --seed 1
+--task finger-spin --family jepa --seed 1 --arch hist3
+--task finger-spin --family rssm --seed 2
+--task finger-spin --family jepa --seed 2 --arch hist3

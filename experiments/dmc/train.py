@@ -23,8 +23,9 @@ _ENVS = {"dmc": dict(data="dmc64", ckpt="dmc", prog="dmc", n_ep=2000, n_train=19
          "metaworld": dict(data="metaworld64", ckpt="metaworld", prog="metaworld", n_ep=10000, n_train=9500,
                            label="Meta-World main grid")}
 _E = _ENVS[ENV]
-DATA = pathlib.Path("/scratch/hpc/11/xiar3/MetricTrust/data") / _E["data"]
-CKPT = pathlib.Path("/scratch/hpc/11/xiar3/MetricTrust/checkpoints") / _E["ckpt"]
+_SCR = pathlib.Path(os.environ.get("RCH_SCRATCH", "/scratch/hpc/11/xiar3/MetricTrust"))   # side paper 16B
+DATA = _SCR / "data" / _E["data"]
+CKPT = _SCR / "checkpoints" / _E["ckpt"]
 PROG = ROOT / "results" / "progress" / _E["prog"]
 N_EPISODES, N_TRAIN = _E["n_ep"], _E["n_train"]      # the last 5 % of episodes are D_eval
 LOG_FRACS = (0.03, 0.06, 0.12, 0.25, 0.5, 1.0)

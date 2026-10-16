@@ -67,6 +67,7 @@ def main():
     ap.add_argument("--pop", type=int, default=512)
     ap.add_argument("--iters", type=int, default=6)
     ap.add_argument("--ds", default="1,2,4,8")
+    ap.add_argument("--tag", default="", help="suffix of the output file (Section 16C: _v16)")
     ap.add_argument("--extra", action="store_true",
                     help="mechanism tests only: random / shuffled errors of the same size, DATS-style hedging")
     a = ap.parse_args()
@@ -187,7 +188,7 @@ def main():
               f"C2 {r['regret_C2']:.2f}  ({time.time() - t0:.0f}s)", flush=True)
     od = RESULTS / "latency" / "diagnose"
     od.mkdir(parents=True, exist_ok=True)
-    f = od / f"{meta['family']}_{task}_{meta['run']}{'_extra' if a.extra else ''}.json"
+    f = od / f"{meta['family']}_{task}_{meta['run']}{'_extra' if a.extra else ''}{a.tag}.json"
     f.write_text(json.dumps(out, indent=1)); print("wrote", f)
 
 

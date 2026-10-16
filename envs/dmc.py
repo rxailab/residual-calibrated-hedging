@@ -17,7 +17,11 @@ from dm_control import suite
 
 TASKS = {"cartpole-swingup": ("cartpole", "swingup"),
          "walker-walk": ("walker", "walk"),
-         "cup-catch": ("ball_in_cup", "catch")}
+         "cup-catch": ("ball_in_cup", "catch"),
+         # side paper Section 16B: the other three PlaNet benchmark tasks
+         "reacher-easy": ("reacher", "easy"),
+         "cheetah-run": ("cheetah", "run"),
+         "finger-spin": ("finger", "spin")}
 _SPEC = mujoco.mjtState.mjSTATE_INTEGRATION
 
 

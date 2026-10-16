@@ -16,11 +16,13 @@ import sys, pathlib, time, argparse
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 import numpy as np
 from envs.dmc import DMCEnv
-from envs.data_agent import TDMPC2Agent, checkpoint_path
+from envs.data_agent import TDMPC2Agent, checkpoint_path, DEFAULT_MPC
 
 EPS_TIERS = [0.0, 0.25, 0.5, 0.75, 1.0]
-AGENT_SEED = {"cartpole-swingup": 2, "walker-walk": 1, "cup-catch": 1}
-TASK_OFFSET = {"cartpole-swingup": 1_000_000, "walker-walk": 2_000_000, "cup-catch": 3_000_000}
+AGENT_SEED = {"cartpole-swingup": 2, "walker-walk": 1, "cup-catch": 1,
+              "reacher-easy": 1, "cheetah-run": 1, "finger-spin": 1}          # side paper 16B: seed 1
+TASK_OFFSET = {"cartpole-swingup": 1_000_000, "walker-walk": 2_000_000, "cup-catch": 3_000_000,
+               "reacher-easy": 4_000_000, "cheetah-run": 5_000_000, "finger-spin": 6_000_000}
 N_EPISODES, EVAL_FROM = 2000, 1900          # episodes 1900-1999 form D_eval (5 %)
 
 
@@ -30,7 +32,7 @@ def collect(task, start, n, out, img=128, device="cuda"):
     kw = dict(obs_dim=obs["proprio"].shape[0], act_dim=env.act_dim, device=device)
     prior = TDMPC2Agent(checkpoint_path(task, AGENT_SEED[task]), mpc=False, **kw)
     expert = TDMPC2Agent(checkpoint_path(task, AGENT_SEED[task]), mpc=True, **kw) \
-        if task == "walker-walk" else prior
+        if DEFAULT_MPC.get(task, False) else prior
     buf = {k: [] for k in ("pixels", "proprio", "qpos", "qvel", "mjstate", "action", "reward")}
     meta = {"episode": [], "seed": [], "eps": [], "ret": []}
     t0 = time.time()
