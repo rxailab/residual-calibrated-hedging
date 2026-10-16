@@ -1,0 +1,1 @@
+{"experiment": "DMControl main grid", "family": "tdmpc2", "task": "reacher-easy", "run": "seed0", "seed": 0, "unit": "step", "done": 100000, "total": 100000, "status": "done", "evaluated": 0, "planned_eval": 6, "updated_iso": "2026-10-16T20:56:37+01:00"}

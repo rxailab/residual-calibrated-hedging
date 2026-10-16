@@ -718,3 +718,20 @@ The studies below address the first two directly. The third gap is addressed ind
 - Training, checkpoint copy, diagnostics and evaluation are chained (jobs 25243926-7, 25246742-4).
 
 **16B deviation (16 October 2026, before training started).** All 24 V100s were occupied by the main study, so the 27 new models are trained on astro (L40/L40S) instead of V100. The trainers select bf16 autocast on these GPUs, where the original 24 models were trained on V100 with fp16. Everything else is unchanged. The LeWM offline hedging value (16C, exploratory) is V = -0.013 to +0.024 for every task and delay; see `results/latency/lewm/diag16.json`.
+
+### Section 16 final results (16-17 October 2026)
+
+**16B, three new tasks (`results/latency/newtasks.json`): supported.**
+- Eligible new cells: RSSM, JEPA and TD-MPC2 on reacher-easy and finger-spin, plus RSSM cheetah-run. JEPA and TD-MPC2 cheetah-run fall below the 0.15 floor.
+- R(K=4) - R(K=1): +0.025 [+0.010, +0.040] at d = 4 (Holm p = 0.0004) and +0.017 [+0.006, +0.027] at d = 8 (Holm p = 0.0018).
+- Cells gaining: 5 of 7 at d = 4 and 6 of 7 at d = 8. The largest gain is RSSM cheetah's +0.073 at d = 4; no cell loses more than 0.010.
+- Committed prefix vs time-aligned: +0.127 and +0.161.
+- Mismatch loss: committed prefix 0.089 and 0.129; RCH 0.064 and 0.113.
+- All six tasks pooled (15 cells, 45 models): +0.023 and +0.027, both p <= 0.0001.
+
+**16C, when to hedge (`results/latency/diag16.json`).**
+- Original cells (retrodiction): Spearman +0.69, p = 0.002.
+- New cells (prediction): +0.33, p = 0.13. **Not supported.** RSSM cheetah has the largest gain with V < 0, and JEPA reacher gains with V < 0. The finger cells (V 0.06-0.23) all gain.
+- All 30 pairs: +0.42, p = 0.010.
+- LeWM (exploratory): V between -0.013 and +0.024, and no closed-loop gain.
+- Reading: V tracks the gain where it is large (cup catch, finger), but it is not a reliable prospective rule.

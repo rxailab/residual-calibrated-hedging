@@ -1,0 +1,1 @@
+{"experiment": "DMControl main grid", "family": "jepa", "task": "finger-spin", "run": "seed0", "seed": 0, "unit": "step", "done": 60000, "total": 60000, "status": "done", "evaluated": 0, "planned_eval": 6, "updated_iso": "2026-10-16T20:32:49+01:00"}

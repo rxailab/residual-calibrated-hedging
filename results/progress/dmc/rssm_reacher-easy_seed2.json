@@ -1,0 +1,1 @@
+{"experiment": "DMControl main grid", "family": "rssm", "task": "reacher-easy", "run": "seed2", "seed": 2, "unit": "step", "done": 60000, "total": 60000, "status": "done", "evaluated": 0, "planned_eval": 6, "updated_iso": "2026-10-16T19:28:04+01:00"}

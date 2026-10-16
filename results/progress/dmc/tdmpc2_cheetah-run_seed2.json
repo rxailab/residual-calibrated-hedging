@@ -1,0 +1,1 @@
+{"experiment": "DMControl main grid", "family": "tdmpc2", "task": "cheetah-run", "run": "seed2", "seed": 2, "unit": "step", "done": 100000, "total": 100000, "status": "done", "evaluated": 0, "planned_eval": 6, "updated_iso": "2026-10-16T21:41:30+01:00"}
