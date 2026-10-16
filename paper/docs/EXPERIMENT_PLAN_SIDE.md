@@ -477,3 +477,65 @@ Differences in mismatch loss:
 - New Results subsection, "An ensemble improves the model, and residual hedging the handling of delay", with Tables 7 and 8.
 - Methods subsection "Ensemble and particle baselines"; pre-registration entry; statistics, compute and a recipe step.
 - Abstract, Introduction and Discussion revised.
+
+## 15. Studies for the PRX Intelligence submission (16 October 2026, written before their runs)
+
+**Why.** A review of the manuscript judged the contribution incremental:
+- modest gains at longer delays and none at short delays;
+- outperformed by a three-model ensemble;
+- many unsupported pre-registered hypotheses;
+- a straightforward extension of existing hedging.
+
+The validation (16 October) confirmed these points. It also found that the K = 4 equal-latency contrast was designated confirmatory after the seed-0 pilot was seen.
+
+The three studies below test what the claim of a general, adoptable method needs and the current evidence lacks:
+- the delay range where mismatch is largest;
+- a third-party pretrained world model, where an ensemble is not available;
+- real-time execution.
+
+Each has fresh data and a confirmatory contrast fixed here.
+
+### 15A. Longer delay on the 24 models
+
+- **Arms:** `hcpp16k1` and `hcpp16k4`, population 512, 6 iterations, H = 32, 50 episodes from seeds 950,000-950,049, on all 24 models. `paused16` and `aligned16` already exist from Study 1.
+- **Confirmatory:** R(K=4) - R(K=1) at d = 16, pooled with equal cell weight, with the hierarchical bootstrap. One-sided, alpha = 0.05; a single test.
+- **Secondary:** the mismatch loss of each arm against `paused16`.
+- **Budget:** about 3 GPU-hours on astro.
+
+### 15B. A third-party pretrained world model: LeWM
+
+- **Models:** the public LeWM checkpoints (Maes et al. 2026; `quentinll/lewm-{pusht,cube,reacher}` on the Hugging Face Hub). These are JEPA world models of about 15M parameters trained by another group, with one released checkpoint per task. TwoRoom is excluded by the overlap rules with the main paper.
+- **Planner:** LeWM's own CEM settings (300 samples, 30 iterations, top 30, horizon 5 model steps of 5 environment steps each), with one change: it replans every model step instead of every 5. A decision is one model step.
+- **Goal and cost:** the goal image and LeWM's latent goal cost, unchanged.
+- **Delay schedules:** as in `latency/schedule.py`, at d in {1, 2} decisions. One planning call of LeWM takes about 1 s, so d of 1-2 decisions is the delay these planners incur in real time. `latency/lewm.py` measures the batch-1 latency.
+- **Arms:** paused1, paused_d, aligned_d, cpp_d and rch_d (K = 4).
+  - The residual bank holds 512 windows of the LeWM training dataset. Each residual is r = enc(o_{t+d}) - rollout(z_t, a_{t:t+d}).
+  - RCH replaces the last embedding of the predictor's history after the prefix with each anchor. Anchors are scored in one batched call.
+- **Episodes:** 200 start-goal pairs per task, sampled from LeWM's evaluation dataset with seed 950,000 (LeWM's own evaluation uses seed 42) and shared across arms. LeWM's evaluation protocol is otherwise unchanged: goal offset 25 steps, budget 50 steps, LeWM's success criterion.
+- **Confirmatory:** success(rch_d) - success(cpp_d), pooled over the three tasks with equal weight, at d = 1 and d = 2. One-sided, Holm over the two delays, paired bootstrap over episodes (10,000 resamples).
+- **Secondary:**
+  - cpp_d vs aligned_d;
+  - mismatch loss against paused_d;
+  - per-task results.
+- **Implementation details** that the harness forces are logged as amendments before the runs. Planner settings and contrasts do not change.
+
+### 15C. Real-time hedging
+
+- **Setup:** `latency/wallclock.py` with a new arm, `rch` (K = 4, anchors batched), on the six cup-catch models of JEPA and TD-MPC2.
+  - These are the two cells where the fixed-delay study found the largest gains, so this tests whether the gain survives real-time execution. It does not test generality.
+  - V100, node held exclusively, population 512, 6 iterations, 30 episodes per arm from seeds 950,000-950,029.
+  - Arms: cpp, rch and aligned.
+- **Delay:** the earlier real-time check under-estimated the loop delay, so d_est is now calibrated from one unscored real-time episode. It is the 95th percentile, rounded up, of the realised decisions per call, with the slowest arm (rch).
+- **Confirmatory:** return(rch) - return(cpp), pooled over the six models with equal cell weight, using the hierarchical bootstrap. One-sided, alpha = 0.05.
+- **Secondary:** cpp vs aligned; realised call durations and underruns.
+
+### Text corrections, independent of these results
+
+- State that the K = 4 equal-latency contrast became confirmatory after the seed-0 pilot. Report its estimate on seeds 1 and 2 alone: +0.025 [+0.003, +0.047] and +0.037 [+0.011, +0.064].
+- Correct "little mismatch remains" at d = 2. The mismatch is 0.042 there; hedging does not convert it into return.
+- State that the gains concentrate in the cup-catch cells and RSSM walker.
+
+**Budget:**
+- 15A: about 3 GPU-hours.
+- 15B: about 20-40 GPU-hours on astro after the harness is built, with 77 GiB of public data.
+- 15C: about 4 hours of an exclusive V100.
