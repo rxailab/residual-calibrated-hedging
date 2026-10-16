@@ -716,3 +716,5 @@ The studies below address the first two directly. The third gap is addressed ind
 - Normalisation (eps 0 / eps 1 tiers): reacher-easy 972.9 / 57.1, cheetah-run 816.0 / 6.6, finger-spin 820.9 / 1.1.
 - Agent choice by the pre-set rule: cheetah-run's expert tier uses MPC (prior 494 against MPC 850).
 - Training, checkpoint copy, diagnostics and evaluation are chained (jobs 25243926-7, 25246742-4).
+
+**16B deviation (16 October 2026, before training started).** All 24 V100s were occupied by the main study, so the 27 new models are trained on astro (L40/L40S) instead of V100. The trainers select bf16 autocast on these GPUs, where the original 24 models were trained on V100 with fp16. Everything else is unchanged. The LeWM offline hedging value (16C, exploratory) is V = -0.013 to +0.024 for every task and delay; see `results/latency/lewm/diag16.json`.

@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=rch-train
-#SBATCH --partition=gpu-short
-#SBATCH --gres=gpu:tesla_v100-pcie-32gb:1
+#SBATCH --partition=astro
+#SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=48G
 #SBATCH --time=10:00:00
