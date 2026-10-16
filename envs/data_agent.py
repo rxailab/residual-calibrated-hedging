@@ -55,8 +55,12 @@ HF_URL = "https://huggingface.co/nicklashansen/tdmpc2/resolve/main/dmcontrol/{ta
 # Seed 2 for cartpole because cartpole-swingup-1.pt uses the pre-release layout
 # (see load_state_dict).  It does work with the symlog input: 867 against a
 # published 866 for that seed.
-DEFAULT_SEED = {"cartpole-swingup": 2, "walker-walk": 1, "cup-catch": 1}
-DEFAULT_MPC = {"cartpole-swingup": False, "walker-walk": True, "cup-catch": False}
+DEFAULT_SEED = {"cartpole-swingup": 2, "walker-walk": 1, "cup-catch": 1,
+                "reacher-easy": 1, "cheetah-run": 1, "finger-spin": 1}
+# side paper Section 16B: the prior unless it scores below 0.85 x MPC (experiments/dmc/agent_check.py,
+# results/latency/agents/): reacher 984 vs 984, cheetah 494 vs 850, finger 988 vs 990
+DEFAULT_MPC = {"cartpole-swingup": False, "walker-walk": True, "cup-catch": False,
+               "reacher-easy": False, "cheetah-run": True, "finger-spin": False}
 
 # MPPI settings: config.yaml:34-42.  The discount follows tdmpc2.py:57-70 with
 # 500-step episodes: frac = 500/5, (frac-1)/frac = 0.99, clipped to [0.95, 0.995].
