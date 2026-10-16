@@ -1,0 +1,528 @@
+% PRX Intelligence manuscript, prepared with the APS REVTeX 4.2 template.
+% Compile main.tex with pdfLaTeX + BibTeX, or with Tectonic.
+% PRX Intelligence directs authors to the general APS template; physrev
+% selects the common Physical Review style. No prxintelligence class option
+% is defined in REVTeX 4.2.
+\providecommand{\manuscriptlayout}{reprint}
+\documentclass[aps,physrev,\manuscriptlayout,superscriptaddress,
+  longbibliography,amsmath,amssymb]{revtex4-2}
+
+\usepackage{graphicx}
+\graphicspath{{../}} % Shared figures in paper/figures/.
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{textcomp}
+\usepackage{booktabs}
+\usepackage{algpseudocode}
+\usepackage{hyperref}
+\hypersetup{hidelinks,pdftitle={Hedging against prediction error through inference delay in world-model planning},pdfauthor={Runze Xia and Richard Jiang}}
+\newcommand{\figwide}[1]{\includegraphics[width=\textwidth]{#1}}
+\newcounter{algorithm}
+\raggedbottom
+
+\begin{document}
+\title{Hedging against prediction error through inference delay in world-model planning}
+\author{Runze Xia}
+\email{r.xia2@lancaster.ac.uk}
+\author{Richard Jiang}
+\email[Contact author: ]{r.jiang2@lancaster.ac.uk}
+\affiliation{School of Computing and Communications, Lancaster University, Lancaster, UK}
+
+\begin{abstract}
+World-model planners take time to compute while a deployed system keeps moving. Predicting the state at which a plan takes effect is the standard remedy, but with learned world models it leaves most of the delay loss, because their errors through the delay are value-aligned. We propose residual-calibrated hedging, a training-free addition to sampling-based planners that scores each candidate over post-delay states formed from a world model's prediction and its own recorded errors. Scored in one batched call, four-anchor hedging incurred approximately 1--2\% additional median latency in the tested configurations. In pre-registered tests on 24 recurrent, joint-embedding and TD-MPC2 world models, hedging over four states improved on predictive compensation at delays of four and eight decisions; sixteen states improved it only at eight. A three-model ensemble achieved higher returns, but its advantage was already present without delay. Residual hedging reduced the loss from prediction mismatch, including the ensemble's at the longer delay.
+\end{abstract}
+\maketitle
+
+%% ------------------------------------------------------------------ Introduction
+\section{Introduction}\label{sec:intro}
+
+Learned world models let an agent evaluate actions before taking them\cite{ha2018world,finn2017foresight}. In model predictive control\cite{mayne2000constrained,rawlings2017mpc}, a sampling-based planner proposes candidate action sequences, the model predicts their consequences, and the best sequence is executed, with planning repeated as observations arrive. The planner is typically model predictive path integral control (MPPI)\cite{williams2016aggressive,williams2017mppi} or the cross-entropy method\cite{rubinstein1999cem,pinneri2020icem}, and this loop has been used with learned models from pixels\cite{hafner2019planet,chua2018pets,hansen2022tdmpc,hansen2023tdmpc2}. Learned models also drive tree search\cite{schrittwieser2020muzero} and policy learning in imagination\cite{hafner2020dreamer,hafner2023dreamerv3}.
+
+The models range widely in size, from compact recurrent state-space models\cite{hafner2019planet} and joint-embedding predictors\cite{maes2026lewm,zhou2024dinowm} to video world models with hundreds of millions to billions of parameters\cite{zhao2026miniworld,wu2024ivideogpt,alonso2024diamond,nvidia2025cosmos}. Their planning calls take from milliseconds to minutes.
+
+While a planner computes, a physical system keeps moving and executes actions that were committed earlier. Delayed decision processes have long been studied\cite{katsikopoulos2003delays}, and reinforcement learning has formalised the real-time setting\cite{ramstedt2019rtrl,xiao2020thinking,ramstedt2020random,riemer2024staggered} and benchmarked algorithms in it\cite{thodoroff2022benchmarking}. Control theory has a standard remedy: predict, with the model, the state at which the new control will be applied, and optimise from there\cite{smith1957dead,findeisen2004computational,dirckx2024asap}. The same remedy appears in delay-aware model-based reinforcement learning\cite{chen2020dats,karamzade2025random}, in model predictive control with learned models on robots\cite{elasri2025rthcp}, in tree search that simulates the committed steps\cite{muppidi2026time} and in action-chunking policies\cite{zhao2023act,chi2023diffusionpolicy}, as conditioning on the pending actions or on forecasts of the state at execution time\cite{black2025rtc,shukor2025smolvla,wang2026rapac,motubrain2026wamrt,liao2025dadp,jiang2026futurertc,ye2026dreamzero}. We call it committed-prefix planning. With an exact model it loses nothing except replanning frequency\cite{findeisen2004computational}.
+
+Learned world models are not exact. Their multi-step predictions drift\cite{janner2019mbpo}, and their training objective is not the planner's\cite{lambert2020objective}. How much of the delay loss committed-prefix planning recovers with such models has not been measured. We measure it for three families of pixel world models on three control tasks, splitting the delay loss into a feedback-rate term and a prediction-mismatch term in the manner of networked predictive control\cite{beger2025optimal}. Committed-prefix planning removes only about 30\% of the mismatch. The remaining loss is not explained by the size of the prediction error: on the same states, a random error of the same size costs one-third to three-quarters as much as the model's actual error, so the actual errors fall along directions that matter for the plan's value. Corrections that assume small or low-dimensional errors do not help: neither a first-order sensitivity update\cite{zavala2009asnmpc,belvedere2026feedback} nor bias removal.
+
+We therefore propose residual-calibrated hedging (RCH), a training-free addition to any sampling-based planner that uses a learned world model. Before deployment, the model's own errors in predicting through committed actions are recorded on its training data. At each planning call, every candidate action sequence is scored by its average predicted cost over several post-delay states: the model's prediction, plus errors drawn from that record. A learned variant replaces the record with a small heteroscedastic error model conditioned on the state and the committed actions.
+
+The idea of hedging over the execution-time state comes from robust and scenario-based predictive control\cite{calafiore2006scenario,lucia2013multistage}, with relatives in particle and tube formulations of sampling-based control\cite{dyro2021particle,gandhi2021robust}, chance-constrained MPPI under state-prediction uncertainty\cite{serfling2026ccmppi} and ensemble hedging in delay-aware reinforcement learning\cite{chen2020dats}. CLIS-MPPI\cite{liu2026clis} applied it to planning delay in MPPI: it optimises rollouts from sampled execution-time initial states and corrects the executed actions with rollout-based feedback, using a known robot model. RCH makes this kind of hedging work for learned world models, whose dominant uncertainty is model error rather than the length of the delay. The hedge distribution is calibrated from the model's own measured errors, not from an assumed delay distribution or an ensemble of probabilistic models\cite{chua2018pets,chen2020dats}. RCH therefore applies to any single pretrained world model, including deterministic latent models and video diffusion models. Compared directly with DATS-style hedging over three independently trained models, the ensemble achieved higher returns, but it did so with or without delay and lost as much to prediction mismatch as an unhedged single model; RCH reduced that loss, for a single model and, at the longer delay, for the ensemble. RCH also costs almost no latency: a single robot's planning call is limited by the sequential steps of the model rollout rather than by the number of candidate rows, so the hedge states can be scored in the same batched call.
+
+Our contributions are threefold. The first is the method: residual-calibrated hedging, an algorithm and a deployment recipe for sampling-based planners with learned world models, with a learned heteroscedastic variant. The second shows why it is needed: with learned pixel world models, committed-prefix planning leaves about 70\% of the mismatch loss, because the models' errors through the delay are value-aligned. The third is evidence from pre-registered tests on 24 world models in three families: four anchors improve on committed-prefix planning at delays of four and eight decisions, and sixteen anchors only at eight. A second study on held-out models and its ablations, where these gains are secondary comparisons, shows that the gain comes from hedging rather than from correcting the prediction or penalising uncertainty, and batched scoring keeps it at the latency of plain planning. A pre-registered comparison with ensemble hedging, with post-hoc analyses that separate model quality from delay compensation, shows that the two methods address different parts of the loss and combine at the longer delay.
+
+%% ------------------------------------------------------------------ Results
+\section{Results}\label{sec:results}
+
+\subsection{Paused simulators hide the latency of world-model planners}\label{sec:motivation}
+
+Closed-loop evaluations of world-model planners almost always pause the simulator during planning\cite{tassa2018dmc,maes2026swm,zhang2025worldinworld}. Timing records from a configuration study of a diffusion world-model planner show what this can hide (Fig.~\ref{fig:motivation}). The planner is a MiniWorld-0.5B video model\cite{zhao2026miniworld} fine-tuned on DeepMind Control Suite data and planned with MPPI\cite{williams2017mppi}. Across six inference configurations, the amortised planning cost fell 3.41-fold, from 10.44 to 3.06 seconds per decision. The duration of one planning call fell only from 209 to 121 seconds, longer than the 10 to 25 seconds of simulated time in a whole episode. Planning less often halved the amortised cost and left the call duration unchanged. Throughput and latency are distinct measures of inference cost\cite{reddi2019mlperf}, and only latency determines how stale a plan is. Fewer sampler steps\cite{song2021ddim} shortened the call, but nowhere near a control period. Timed for a single environment on the same GPU, one call with two sampler steps took 28~s, about 1,400 cartpole decisions. Throughout this paper, latency means the duration of one planning call, and the delay $d$ is the number of decisions that elapse during it.
+
+\begin{figure*}[t]
+\centering
+\figwide{figures/cost_vs_latency.pdf}
+\caption{\textbf{Amortised planning cost and the duration of a planning call measure different things.} Reanalysis of an 18-job configuration study of a diffusion world-model planner on one V100 GPU (three DeepMind Control tasks, five episodes per task and configuration, simulator paused while planning). Bars are grouped by the number of decisions $r$ served by one planning call, and $s$ is the number of sampler steps. Bars show the mean over the three tasks and white dots the individual tasks (left to right: cartpole swing-up, walker walk, cup catch). \textbf{a},~Planning seconds per agent decision. \textbf{b},~Mean duration of one planning call serving five batched episodes, reconstructed from accumulated timers and the number of calls (Methods). The shaded band marks the simulated duration of a whole episode (10--25~s). No timing intervals are shown because independent timing repetitions were not recorded.}
+\label{fig:motivation}
+\end{figure*}
+
+\subsection{Planning schedules and the decomposition of the delay loss}\label{sec:schedules}
+
+We compare four schedules (Fig.~\ref{fig:schematic}): the paused planner $\mathcal{P}_r$, where the simulator waits during planning and $r$ actions are executed per plan; the naive planner $\mathcal{N}_d$, which executes a plan made for an earlier state from its first action; the time-aligned planner $\mathcal{A}_d$, which executes the same plan from position $d$; and committed-prefix planning $\mathcal{C}_d$. A run fixes the delay $d$, and the asynchronous planners $\mathcal{N}_d$, $\mathcal{A}_d$ and $\mathcal{C}_d$ make identical model calls (Methods).
+
+With an exact deterministic model, $\mathcal{C}_d$ reproduces $\mathcal{P}_d$ under matched sampling noise. This is the nominal property of predictive delay compensation\cite{findeisen2004computational}; we verified it to $10^{-9}$ on an exact linear system. We therefore split the delay loss of an asynchronous planner $\mathcal{X}_d$, with $R$ the normalised return (Methods), into a feedback-rate loss and a mismatch loss,
+\begin{equation}
+\begin{aligned}
+F(d)&=R(\mathcal{P}_1)-R(\mathcal{P}_d), \\
+M(d)&=R(\mathcal{P}_d)-R(\mathcal{X}_d).
+\end{aligned}
+\end{equation}
+Because $\mathcal{C}_d$ reproduces $\mathcal{P}_d$ with an exact model, $M(d)=R(\mathcal{P}_d)-R(\mathcal{C}_d)$ measures prediction mismatch alone.
+
+\begin{figure*}[t]
+\centering
+\figwide{figures/cpp_timeline.pdf}
+\caption{\textbf{Planning schedules under a delay of $d=4$ decisions.} Top, the paused reference, in which the simulator is frozen during each plan. Middle, time-aligned asynchronous planning: each call plans from the observation at its start and its actions from position $d$ onward are executed after the call returns, from a state the plan did not assume (orange outline). Bottom, committed-prefix planning: each call rolls the world model through the actions that will execute during the call and plans from the predicted state $\hat s_{t+d}$ (green outline). Residual-calibrated hedging keeps this schedule and changes how candidates are scored (Algorithm~\ref{alg:hedge} in Methods).}
+\label{fig:schematic}
+\end{figure*}
+
+\subsection{Committed-prefix planning leaves a residual mismatch}\label{sec:residual}
+
+We ran recurrent state-space (RSSM)\cite{hafner2019planet}, joint-embedding predictive (JEPA)\cite{maes2026lewm} and TD-MPC2\cite{hansen2023tdmpc2} world models on cartpole swing-up, walker walk and cup catch\cite{tassa2018dmc}, with three independently trained models per family and task. Each model was evaluated under delays of $d\in\{1,2,4,8,16\}$ decisions, with 50 episodes per condition starting from states shared across conditions, and planned with MPPI (population 512, 6 iterations, horizon 32 decisions; Methods).
+
+Committed-prefix planning beat time-aligned planning at every delay, and the margin grew with the delay. Pooled over the eight family--task cells above the pre-specified return floor, the margin rose from $+0.010$ normalised return at $d=1$ to $+0.048$ $[+0.028, +0.068]$ at $d=16$ (Fig.~\ref{fig:curves}a). The pre-registered test that the margin is positive at each of $d=2,4,8$ just failed, with $p=0.050$. The naive planner was far worse than either.
+
+Splitting the delay loss shows where the return goes (Fig.~\ref{fig:curves}b). Up to $d=8$, most of it is mismatch rather than reduced feedback. At $d=8$, the time-aligned planner loses $0.133$ $[0.104, 0.163]$ to mismatch and $0.080$ $[0.047, 0.115]$ to replanning less often. Committed-prefix planning reduces the mismatch to $0.092$ $[0.072, 0.114]$, which removes 31\% of it. Across delays it removes 27--36\%, against the pre-registered expectation of at least half.
+
+\begin{figure*}[t]
+\centering
+\figwide{figures/delay_curves.pdf}
+\caption{\textbf{Committed-prefix planning recovers a minority of the delay loss with learned world models.} RSSM, JEPA and TD-MPC2 world models on three DeepMind Control tasks, eight family--task cells above the return floor, three models per cell, 50 episodes per model and condition. \textbf{a},~Normalised return against delay for each schedule; the dashed line marks the paused planner that replans every decision. Bands are 95\% hierarchical bootstrap intervals of each schedule's pooled mean; paired contrasts between schedules are tighter (main text). \textbf{b},~Delay loss of the asynchronous planners split into feedback-rate loss $F(d)=R(\mathcal{P}_1)-R(\mathcal{P}_d)$ and mismatch loss $M(d)=R(\mathcal{P}_d)-R(\mathcal{X}_d)$. Bars are equal-weight means over the eight cells, white dots show the individual cells (three models and 50 episodes per model each), and error bars are 95\% hierarchical bootstrap intervals of the pooled mean. $F(1)$ is zero by definition.}
+\label{fig:curves}
+\end{figure*}
+
+\subsection{The residual comes from value-aligned prediction errors}\label{sec:diagnosis}
+
+To find what limits committed-prefix planning, we replayed held-out data windows with each model, used the recorded actions as the committed prefix, and planned once from the predicted post-delay latent and once from the true filtered latent, with identical sampling noise (Methods). Regret is the model-predicted cost of the plan from the predicted latent, evaluated from the true latent, minus that of the plan made from the true latent. Replanning from the true latent with different noise gives regret near zero, so the regret reflects the anchor rather than sampling variance.
+
+The predicted latent was close to the truth: its error was under 20\% of the stale error for the RSSM and JEPA models, and 7--140\% for TD-MPC2. Regret was nonetheless large wherever committed-prefix planning had failed in closed loop (Table~\ref{tab:diag}). Replacing the model's error by a random error of the same size reduced regret by a factor of 1.3 to 3, so the actual errors fall along value-relevant directions. Halving the error roughly halved the regret. Two corrections failed: a finite-difference sensitivity correction along the eight leading directions of calibration residuals, which held only 10--50\% of the error, and removing the mean residual. Selecting, on arrival, the plan of whichever of 16 candidate anchors lay nearest the observed state also barely helped. Scoring each candidate by its average cost over anchors drawn from calibration residuals reduced regret by roughly a quarter to a half wherever there was regret to remove (more in one noisy case).
+
+\begin{table*}[t]
+\centering
+\caption{Anchor regret on held-out windows at $d=2$}\label{tab:diag}
+\begin{tabular*}{\textwidth}{@{\extracolsep\fill}lrrrrr@{}}
+\toprule
+Model
+& \multicolumn{1}{c}{\shortstack{Stale\\latent}}
+& \multicolumn{1}{c}{\shortstack{Predicted\\latent}}
+& \multicolumn{1}{c}{\shortstack{Random error,\\same size}}
+& \multicolumn{1}{c}{\shortstack{Half the\\error}}
+& \multicolumn{1}{c}{\shortstack{Hedged,\\$K=16$}} \\
+\midrule
+RSSM walker & 16.28 & 7.84 & 3.90 & 3.94 & 3.59 \\
+JEPA cartpole & 0.58 & 0.45 & 0.14 & 0.18 & 0.32 \\
+TD-MPC2 walker & 6.08 & 3.65 & 2.72 & 2.94 & 2.77 \\
+TD-MPC2 cup & 2.68 & 1.65 & 0.82 & 0.42 & $-1.55$ \\
+RSSM cup & 2.95 & $-0.02$ & 0.00 & $-0.03$ & $-0.03$ \\
+\bottomrule
+\end{tabular*}
+
+\par\smallskip{\footnotesize\raggedright\noindent Model-predicted cost from the true post-delay latent of the plan made from each anchor, minus that of the plan made from the true latent (model cost units, 64 windows). Hedged: one plan scored by the mean cost over 16 anchors, the predicted latent plus 15 calibration residuals. RSSM cup is a control where committed-prefix planning already works.\par}
+\end{table*}
+
+\subsection{Residual-calibrated hedging}\label{sec:hedged-scoring}
+
+Residual-calibrated hedging keeps the committed-prefix schedule and changes only how a candidate is scored (Algorithm~\ref{alg:hedge} in Methods).
+
+\textbf{Calibration, once per model and delay.} The model's own $d$-step prediction residuals $r = z_{t+d} - \hat z_{t+d}$ are recorded on training windows, giving a bank of 512 residuals. The learned variant instead fits a small network to the same residuals, conditioned on $\hat z_{t+d}$, $z_t$ and the committed actions; it predicts the residual's mean and per-dimension variance (Methods).
+
+\textbf{At each call.} The committed actions are rolled through the model once, giving the predicted latent $\hat z$. $K$ anchors are formed: $\hat z$ itself, and $\hat z$ plus $K-1$ residuals drawn from the bank; in the learned variant, the anchors are the corrected mean and $K-1$ draws from the predicted distribution. Each candidate's free actions are scored by the mean predicted cost over the anchors, using the same samples for every anchor, in one batched call.
+
+With $K=1$ the method is committed-prefix planning. The hedge targets the failure diagnosed above: a plan tuned to one predicted state is fragile when the error falls in value-relevant directions, and averaging over plausible post-delay states favours plans that are good across them.
+
+\subsection{Four-anchor hedging recovers return at delays of four decisions or more}\label{sec:closedloop}
+
+Over all 24 models, the pre-registered test of 16 anchors against committed-prefix planning confirmed a gain at $d=8$ but not at $d=4$ (Table~\ref{tab:contrasts}). At $d=8$ the gain was $+0.036$ $[+0.014, +0.057]$ normalised return (Holm-adjusted one-sided $p=0.0014$); at $d=4$ it was $+0.008$ $[-0.010, +0.027]$ ($p=0.19$), so the pilot's marginal gain did not replicate. The pre-registered equal-latency test of four anchors, which add no latency for a single environment (see `Hedging costs almost no latency for a single robot'), succeeded at both delays: $+0.022$ $[+0.003, +0.040]$ at $d=4$ (Holm-adjusted one-sided $p=0.035$) and $+0.037$ $[+0.016, +0.058]$ at $d=8$ ($p=0.0004$). Neither number of anchors helped at $d=2$, where little mismatch remains.
+
+Against time-aligned planning, the common asynchronous baseline, four-anchor hedging doubled the gain of committed-prefix planning (secondary contrasts, Table~\ref{tab:timealigned}).
+
+In the single-model pilot, gains were largest where diagnosis had found value-aligned errors, for example JEPA cup catch at $d=8$ (0.43 to 0.68 with 16 anchors) and RSSM walker (0.13 to 0.17). Hedging hurt slightly on JEPA cartpole and on TD-MPC2 cartpole and walker.
+
+\begin{table*}[t]
+\centering
+\caption{Closed-loop contrasts over 24 models}\label{tab:contrasts}
+\begin{tabular*}{\textwidth}{@{\extracolsep\fill}llccc}
+\toprule
+Family & Contrast & $d$ & Difference [95\% CI] & $p$ (Holm) \\
+\midrule
+Replication & $K=16$ vs $K=1$, $N=512$ & 4 & $+0.008$ $[-0.010, +0.027]$ & 0.19 \\
+ & & 8 & $+0.036$ $[+0.014, +0.057]$ & 0.0014 \\
+Equal latency & $K=4$, $N=512$ vs $K=1$, $N=512$ & 4 & $+0.022$ $[+0.003, +0.040]$ & 0.035 \\
+ & & 8 & $+0.037$ $[+0.016, +0.058]$ & 0.0004 \\
+ & $K=16$, $N=128$ vs $K=1$, $N=512$ & 4 & $-0.034$ $[-0.053, -0.015]$ & 1.0 \\
+ & & 8 & $-0.038$ $[-0.061, -0.015]$ & 1.0 \\
+Secondary & $K=16$ vs $K=1$, $N=512$ & 2 & $-0.006$ $[-0.026, +0.013]$ & -- \\
+ & $K=4$ vs $K=1$, $N=512$ & 2 & $-0.001$ $[-0.019, +0.017]$ & -- \\
+\bottomrule
+\end{tabular*}
+
+\par\smallskip{\footnotesize\raggedright\noindent Difference in normalised return, pooled with equal weight over eight family--task cells (three models each, 50 episodes per model and arm, shared initial states). 95\% hierarchical bootstrap intervals; one-sided $p$, Holm-adjusted within each pre-specified family (Methods). $K$: anchors; $N$: population. All arms use 6 MPPI iterations and horizon 32.\par}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\caption{Gains over time-aligned planning (secondary contrasts)}\label{tab:timealigned}
+\begin{tabular*}{\textwidth}{@{\extracolsep\fill}lcc@{}}
+\toprule
+ & $d=4$ & $d=8$ \\
+\midrule
+Committed prefix vs time-aligned & $+0.020$ & $+0.035$ \\
+Hedged ($K=4$) vs time-aligned & $+0.042$ $[+0.024, +0.060]$ & $+0.072$ $[+0.047, +0.098]$ \\
+\bottomrule
+\end{tabular*}
+
+\par\smallskip{\footnotesize\raggedright\noindent Difference in normalised return over the same 24 models as Table~\ref{tab:contrasts}, with 95\% hierarchical bootstrap intervals for the hedged planner.\par}
+\end{table*}
+
+\subsection{The gain holds on held-out models, and it comes from hedging}\label{sec:heldout}
+
+A second pre-registered study tested the learned variant and two ways of steering the planner with the error model. Penalty strengths were tuned on the seed-0 models, using episodes from a separate seed range. All contrasts were then estimated on the 16 seed-1 and seed-2 models, which were never used to design or tune anything, with $K=4$, population 512, $d\in\{4,8\}$ and 50 episodes per model (Table~\ref{tab:heldout}). Four ablations locate the gain (Methods): mean correction only, with one anchor at the corrected mean; a fixed spread, with draws using the global residual standard deviation instead of the predicted one; a hand-off penalty on the predicted uncertainty of the next call's anchor; and a risk penalty on the standard deviation of the cost over anchors.
+
+Both forms of hedging again improved on committed-prefix planning. The residual bank gained $+0.025$ at $d=4$ and $+0.037$ at $d=8$; the learned error model gained $+0.025$ and $+0.047$. Against time-aligned execution, the learned variant gained $+0.044$ and $+0.090$. The learned model did not beat the residual bank, but at $d=8$ its state-dependent spread beat a fixed spread of the same average size. Correcting the prediction by the learned mean alone gave smaller gains whose intervals include zero.
+
+Two ways of steering the planner failed. A penalty on the predicted uncertainty of the next hand-off lowered return at both delays, at the tuned strength: it drives the planner away from fast motions that are hard to predict, such as catching. A generic mean--standard-deviation risk penalty did not add to hedging.
+
+The four primary tests of this study concerned the learned variant and the hand-off penalty, and none succeeded (Methods). The gains over committed-prefix planning are secondary contrasts here, and they agree with the pre-registered four-anchor result of Table~\ref{tab:contrasts}. The gain therefore comes from hedging itself. The residual bank is the simplest form to adopt; the learned model is an option when a calibrated, state-dependent spread is wanted.
+
+\begin{table*}[t]
+\centering
+\caption{Held-out comparisons and ablations}\label{tab:heldout}
+\begin{tabular*}{\textwidth}{@{\extracolsep\fill}lcc}
+\toprule
+Contrast & $d=4$ & $d=8$ \\
+\midrule
+Residual bank vs committed prefix & $+0.025$ $[+0.003, +0.047]$ & $+0.037$ $[+0.011, +0.064]$ \\
+Learned error model vs committed prefix & $+0.025$ $[+0.006, +0.046]$ & $+0.047$ $[+0.013, +0.082]$ \\
+Learned error model vs time-aligned & $+0.044$ $[+0.025, +0.063]$ & $+0.090$ $[+0.063, +0.116]$ \\
+Learned error model vs residual bank & $+0.001$ $[-0.018, +0.019]$ & $+0.011$ $[-0.008, +0.030]$ \\
+Mean correction only vs committed prefix & $+0.015$ $[-0.006, +0.038]$ & $+0.020$ $[-0.008, +0.049]$ \\
+Fixed spread vs learned spread & $+0.008$ $[-0.010, +0.026]$ & $-0.020$ $[-0.039, -0.002]$ \\
+Hand-off penalty vs none & $-0.026$ $[-0.045, -0.007]$ & $-0.021$ $[-0.040, -0.003]$ \\
+Risk penalty vs none & $-0.016$ $[-0.039, +0.006]$ & $-0.027$ $[-0.057, +0.001]$ \\
+\bottomrule
+\end{tabular*}
+
+\par\smallskip{\footnotesize\raggedright\noindent Sixteen seed-1 and seed-2 models in eight cells, $K=4$ anchors, population 512, 50 episodes per model and arm; difference in normalised return with 95\% hierarchical bootstrap intervals. Penalty strengths were tuned on the seed-0 models with separate episodes ($\lambda=0.25$ for the hand-off penalty, $0.5$ for the risk penalty).\par}
+\end{table*}
+
+\subsection{Hedging costs almost no latency for a single robot}\label{sec:latency}
+
+The delays studied here are the ones these planners incur. We timed the default planner (population 512, 6 iterations, horizon 32) for one environment on a node held exclusively, using the 95th percentile of 200 calls (Table~\ref{tab:gpu}; protocol in Methods). The H200 is slower than the L40S here because a single environment's call is a long sequence of small kernels rather than a large computation.
+
+\begin{table*}[t]
+\centering
+\caption{Single-environment latency of the default planner and the delay it implies}\label{tab:gpu}
+\begin{tabular*}{\textwidth}{@{\extracolsep\fill}lccc@{}}
+\toprule
+GPU & Call time & Delay on cartpole & Delay on walker and cup catch \\
+\midrule
+L40S & 77--98 ms & 4--5 decisions & 2--3 decisions \\
+H200 & 103--137 ms & 6--7 decisions & 3--4 decisions \\
+V100 & 126--161 ms & 7--9 decisions & 3--4 decisions \\
+\bottomrule
+\end{tabular*}
+
+\par\smallskip{\footnotesize\raggedright\noindent Population 512, 6 iterations, horizon 32; 95th percentile of 200 calls on a node held exclusively.\par}
+\end{table*}
+
+A single-environment planning call is limited by the sequential steps of the model rollout, not by the number of candidate rows. Scoring all anchors in one batched call therefore uses GPU width that is otherwise idle (Table~\ref{tab:latency}). For all three families on an L40S GPU, hedging over four anchors at population 512, or over 16 anchors at population 128, kept the call within 3\% of plain committed-prefix planning at population 512. Sixteen anchors at population 512 cost 32--55\% more.
+
+Holding latency fixed shows which form to use (Table~\ref{tab:contrasts}). Four anchors at population 512, within 2\% of the plain latency, beat committed-prefix planning at $d=4$ and $d=8$ (Holm-adjusted $p=0.035$ and $0.0004$). Sixteen anchors at population 128, equally fast, did worse ($-0.034$ and $-0.038$): shrinking the population to make room for anchors costs more than the hedge returns.
+
+\begin{table*}[t]
+\centering
+\caption{Single-environment latency of hedged planning}\label{tab:latency}
+\begin{tabular*}{\textwidth}{@{\extracolsep\fill}lrrrr@{}}
+\toprule
+Configuration
+& \multicolumn{1}{c}{\shortstack{Rows per\\call}}
+& \multicolumn{1}{c}{\shortstack{RSSM\\walker}}
+& \multicolumn{1}{c}{\shortstack{JEPA\\cup}}
+& \multicolumn{1}{c}{\shortstack{TD-MPC2\\cup}} \\
+\midrule
+$K=1$, population 512 (committed prefix) & 512 & 102 ms & 95 ms & 81 ms \\
+$K=4$, population 512 & 2{,}048 & 103 ms & 96 ms & 83 ms \\
+$K=16$, population 128 & 2{,}048 & 105 ms & 98 ms & 84 ms \\
+$K=16$, population 512 & 8{,}192 & 158 ms & 125 ms & 112 ms \\
+\bottomrule
+\end{tabular*}
+
+\par\smallskip{\footnotesize\raggedright\noindent Median of 50 calls with CUDA synchronisation, L40S GPU, 6 MPPI iterations, horizon 32, $d=4$, anchors scored in one batched call, timed on a shared node. Plain-planner latencies on exclusive nodes are given in Table~\ref{tab:gpu}.\par}
+\end{table*}
+
+\subsection{An ensemble improves the model, and residual hedging the handling of delay}\label{sec:ensemble}
+
+DATS-style ensemble hedging\cite{chen2020dats} is the closest learned-model alternative to residual-calibrated hedging. We therefore compared the two directly, on the same eight cells, delays and initial states (Methods). The ensemble consisted of the three independently trained models of each cell. Each member filtered its own latent, predicted through the committed actions with its own dynamics and scored the shared candidates, and candidate costs were averaged over members. We ran it at the population and iterations of RCH, and at two iterations, which matches the latency of single-model planning when the members are evaluated in turn (Table~\ref{tab:enscost}).
+
+In the pre-registered comparison, RCH did not match the ensemble (Table~\ref{tab:ensemble}). RCH was below the latency-matched ensemble at $d=4$: $-0.042$ $[-0.070, -0.016]$, Holm-adjusted two-sided $p=0.0008$. The other three differences also favoured the ensemble, but their intervals included zero. Against single-model committed-prefix planning, the ensemble gained $+0.046$ and $+0.045$ at $d=4$ and $d=8$ at matched population, and $+0.064$ and $+0.063$ at matched latency; RCH gained $+0.022$ and $+0.037$. The fewer iterations do not explain the latency-matched result: in a post-hoc check on all 24 models, RCH scored the same at two iterations as at six ($-0.003$ and $-0.005$).
+
+Two post-hoc analyses show where the ensemble's advantage comes from. First, it does not depend on delay. With the simulator paused and a new plan at every decision, the ensemble scored $+0.066$ $[+0.033, +0.099]$ above the single models, more than its gain under delay. Second, it does not reduce the mismatch loss. We measured each planner's mismatch loss against the same planner with the simulator paused and the same replanning interval. On this measure, the ensemble lost as much to prediction mismatch as single-model committed-prefix planning (Table~\ref{tab:ensemble}, bottom). Its mismatch loss minus that of committed-prefix planning was $0.000$ $[-0.023, +0.023]$ at $d=4$ and $+0.012$ $[-0.011, +0.036]$ at $d=8$. RCH lost less to mismatch than the ensemble, by $0.022$ $[-0.004, +0.049]$ at $d=4$ and $0.049$ $[+0.024, +0.075]$ at $d=8$. Adding RCH to the ensemble cut the ensemble's mismatch loss at $d=8$ from $0.111$ to $0.078$, a secondary contrast of $+0.033$ $[+0.008, +0.058]$ in return, but not at $d=4$. Averaging independently trained models gives a better model, hedging over the model's recorded errors gives better handling of delay, and at the longer delay the two combine.
+
+On the RSSM, the one family with a stochastic transition, hedge states sampled from the model's own transition matched RCH at $d=8$. At $d=4$ they exceeded it: $+0.020$ $[+0.002, +0.036]$, three cells. A model with a calibrated stochastic transition can therefore supply its own hedge states; RCH supplies them for deterministic models.
+
+The ensemble's gains need three trained models (Table~\ref{tab:enscost}). That triples the training, the weights and the per-decision filtering. At matched population the call takes 2.9 times as long; at matched latency the ensemble runs a third of the iterations. RCH needs one model and a residual bank recorded in minutes. For a pretrained video world model such as MiniWorld-0.5B, each further member would be another half-billion-parameter model to train and serve.
+
+\begin{table*}[t]
+\centering
+\caption{Residual-calibrated hedging and ensemble hedging}\label{tab:ensemble}
+\begin{tabular*}{\textwidth}{@{\extracolsep\fill}lcc@{}}
+\toprule
+ & $d=4$ & $d=8$ \\
+\midrule
+\multicolumn{3}{@{}l}{\textit{Normalised return}} \\
+Committed prefix, one model & 0.359 & 0.286 \\
+RCH ($K=4$), one model & 0.381 & 0.323 \\
+Ensemble of three, matched population & 0.405 & 0.332 \\
+Ensemble of three, matched latency & 0.423 & 0.349 \\
+Ensemble with RCH & 0.402 & 0.365 \\
+\midrule
+\multicolumn{3}{@{}l}{\textit{RCH minus ensemble (pre-registered)}} \\
+Matched population & $-0.023$ $[-0.051, +0.002]$ & $-0.008$ $[-0.038, +0.021]$ \\
+Matched latency & $-0.042$ $[-0.070, -0.016]$ & $-0.026$ $[-0.057, +0.004]$ \\
+\midrule
+\multicolumn{3}{@{}l}{\textit{Mismatch loss, $R(\mathcal{P}_d)-R(\text{planner})$ (post hoc)}} \\
+Committed prefix, one model & 0.076 & 0.098 \\
+RCH ($K=4$), one model & 0.054 & 0.061 \\
+Ensemble of three, matched population & 0.076 & 0.111 \\
+Ensemble of three, matched latency & 0.068 & 0.103 \\
+Ensemble with RCH & 0.079 & 0.078 \\
+\bottomrule
+\end{tabular*}
+
+\par\smallskip{\footnotesize\raggedright\noindent Eight family--task cells, 50 episodes per arm on shared initial states. Single-model rows average the three models of each cell; ensemble rows use the three together. Population 512 and 6 iterations, except the matched-latency ensemble (2 iterations). Contrasts: 95\% hierarchical bootstrap intervals; Holm-adjusted two-sided $p=0.21$ and $0.60$ (matched population) and $0.0008$ and $0.21$ (matched latency) at $d=4$ and $8$. Mismatch loss is measured against the same planner, one model or the ensemble, with the simulator paused and a new plan every $d$ decisions, $\mathcal{P}_d$.\par}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\caption{Cost of ensemble hedging}\label{tab:enscost}
+\begin{tabular*}{\textwidth}{@{\extracolsep\fill}lrrr@{}}
+\toprule
+& \multicolumn{1}{c}{\shortstack{RSSM\\walker}} & \multicolumn{1}{c}{\shortstack{JEPA\\cup}} & \multicolumn{1}{c}{\shortstack{TD-MPC2\\cup}} \\
+\midrule
+\multicolumn{4}{@{}l}{\textit{Call latency, one environment}} \\
+Committed prefix, one model & 103 ms & 94 ms & 83 ms \\
+RCH ($K=4$), one model & 103 ms & 95 ms & 83 ms \\
+Ensemble of three, 6 iterations & 299 ms & 272 ms & 239 ms \\
+Ensemble of three, 2 iterations & 100 ms & 91 ms & 80 ms \\
+Ensemble with RCH, 6 iterations & 303 ms & 277 ms & 242 ms \\
+Particle anchors ($K=4$), one model & 107 ms & -- & -- \\
+\midrule
+\multicolumn{4}{@{}l}{\textit{Per model}} \\
+Parameters & 9.3 M & 3.3 M & 7.8 M \\
+Weights in GPU memory & 35 MiB & 13 MiB & 30 MiB \\
+Latent filtering per decision & 0.77 ms & 0.49 ms & 0.46 ms \\
+Training (V100 GPU-hours) & 2.2 & 1.4 & 0.8 \\
+\bottomrule
+\end{tabular*}
+
+\par\smallskip{\footnotesize\raggedright\noindent Latency: median of 50 calls with CUDA synchronisation, L40S GPU on a shared node, $d=4$, population 512, horizon 32, with the configurations timed in alternation; the ensemble evaluates its members in turn. Peak planning memory above the weights was 10--18 MiB for one model or the ensemble, and 28--46 MiB with four anchors. Filtering three latents took 1.33--2.23 ms per decision. Training is the wall time of the original training jobs. Each ensemble member is a separately trained model, so the ensemble triples parameters, weight memory, filtering and training.\par}
+\end{table*}
+
+\subsection{Fixed-delay evaluation matches real-time control when the delay covers the whole loop}\label{sec:wallclock}
+
+All results above use a fixed delay per run. To check this protocol, we ran the RSSM on cartpole in real time on a V100 GPU (Methods). A simulator process advanced one decision every 20 ms of wall time; the planner, in a separate process, filtered each new frame and planned; and the committed prefix was set from a latency measurement taken at start-up.
+
+With a cheaper planner (population 128, 2 iterations), calls took a median of 4 decisions against an estimate of 5. Real-time returns matched the fixed-delay simulation: committed-prefix planning scored $0.378\pm0.014$ in real time, against $0.350\pm0.019$ and $0.337\pm0.011$ simulated at $d=4$ and $d=8$ (mean $\pm$ s.e.m., 30 episodes each).
+
+With the default planner, the start-up estimate of 11 decisions left out the time spent filtering frames inside the loop. Calls took 14 decisions, so the committed prefix ended three decisions early, and committed-prefix planning fell below time-aligned execution ($0.227\pm0.012$ against $0.287\pm0.008$, mean $\pm$ s.e.m., 30 episodes each). Compensation by prediction, hedged or not, needs the delay of the whole control loop, with margin.
+
+\subsection{A video diffusion world model}\label{sec:diffusion}
+
+For one environment on a V100 GPU, a planning call of the diffusion world model takes 28--44~s without a prefix (2 to 8 sampler steps), and 42--58~s with a 16-decision prefix. Its real delay therefore exceeds an episode, and the delays studied here correspond to hardware roughly two orders of magnitude faster. In closed loop, with 10 episodes per arm, the diffusion results do not separate the planners (Table~\ref{tab:diffusion}). Committed-prefix planning beat time-aligned planning on cup catch at $d=8$ ($0.19$ against $-0.01$), but not on cartpole ($0.27$ against $0.30$). With episodes paired, four anchors against one gave (mean paired difference $\pm$ s.e.m.) $+0.18\pm0.09$ on cup catch at $d=8$ (0.30 against 0.12), $+0.01\pm0.03$ on cartpole at $d=8$, $+0.08\pm0.08$ on cup catch at $d=16$ and $-0.05\pm0.02$ on cartpole at $d=16$.
+
+Cup catch is close to all-or-nothing for this model, so its standard errors are large. At $d=16$ the time-aligned planner already loses little to mismatch on cartpole (0.23 against 0.26 for the paused planner), which leaves little for hedging to recover. We therefore treat the diffusion results as a feasibility demonstration, not as evidence for or against hedging.
+
+\begin{table*}[t]
+\centering
+\caption{Diffusion world model under delay}\label{tab:diffusion}
+\begin{tabular*}{\textwidth}{@{\extracolsep\fill}lrrrrrr@{}}
+\toprule
+Task & \multicolumn{1}{c}{$d$}
+& \multicolumn{1}{c}{Paused}
+& \multicolumn{1}{c}{\shortstack{Time-\\aligned}}
+& \multicolumn{1}{c}{\shortstack{Committed\\prefix}}
+& \multicolumn{1}{c}{\shortstack{Hedged,\\$K=1$}}
+& \multicolumn{1}{c}{\shortstack{Hedged,\\$K=4$}} \\
+\midrule
+Cartpole & 8 & $0.34\pm0.02$ & $0.30\pm0.02$ & $0.27\pm0.02$ & $0.28\pm0.02$ & $0.29\pm0.02$ \\
+Cup catch & 8 & $0.16\pm0.10$ & $-0.01\pm0.04$ & $0.19\pm0.11$ & $0.12\pm0.12$ & $0.30\pm0.14$ \\
+Cartpole & 16 & $0.26\pm0.01$ & $0.23\pm0.01$ & $0.25\pm0.01$ & $0.30\pm0.02$ & $0.25\pm0.01$ \\
+Cup catch & 16 & $0.02\pm0.08$ & $-0.06\pm0.00$ & $0.04\pm0.10$ & $-0.06\pm0.00$ & $0.02\pm0.08$ \\
+\bottomrule
+\end{tabular*}
+
+\par\smallskip{\footnotesize\raggedright\noindent MiniWorld-0.5B, 2 sampler steps, population 64, 2 iterations; normalised return, mean $\pm$ s.e.m. over 10 episodes with shared initial states. One anchor is committed-prefix planning with the prefix sampled once per episode; the committed-prefix column samples it per candidate.\par}
+\end{table*}
+
+%% ------------------------------------------------------------------ Discussion
+\section{Discussion}\label{sec:discussion}
+
+Predicting the state at which a plan takes effect is the standard response to inference delay\cite{findeisen2004computational,elasri2025rthcp,muppidi2026time}. With learned pixel world models it recovers only part of the delay loss. The remainder is not a matter of error size alone: the models' errors through the committed actions point in value-relevant directions, so plans tuned to a single predicted state are fragile. Residual-calibrated hedging addresses this without retraining, and batched scoring makes it nearly free at deployment batch size. In pre-registered tests across 24 models, hedging over four anchors improved on committed-prefix planning at delays of four and eight decisions at no latency cost, and in secondary comparisons the gain held on held-out models. It did not help at two decisions, where little mismatch remains. Sixteen anchors bought with a smaller population did worse. Correcting the prediction, or penalising predicted uncertainty, did not help: what matters is scoring plans against the plausible states, not choosing one of them or avoiding them. A three-model ensemble achieved higher returns than RCH, significantly so at matched latency at $d=4$. Its advantage was present without delay, though, and it did not reduce the mismatch loss; RCH did, and it added to the ensemble at $d=8$. With the video diffusion model, ten episodes per arm could not separate the planners.
+
+The closest method is CLIS-MPPI\cite{liu2026clis}. It samples execution-time initial states from a distribution induced by the planning delay, optimises rollouts from them, and corrects the executed actions with rollout-based feedback; it was demonstrated in five real runs on a manipulator with a known model, where it avoided collisions that standard MPPI incurred. Residual-calibrated hedging differs in three ways. Its hedge states come from a learned world model's own prediction errors, recorded once or modelled by a small post-hoc network. It targets planners whose model, not the delay length, is the main source of uncertainty, and it needs no model of the robot. And it is evaluated across three model families with pre-registered tests and a study on held-out models. Three other lines of work are complementary: sensitivity-based updates\cite{zavala2009asnmpc,belvedere2026feedback}, learned corrections of queued actions\cite{lin2025speculative}, and re-anchoring on newer observations between iterations, as in the real-time iteration scheme\cite{diehl2005rti,melon2021receding}. A sensitivity update did not help in our diagnosis, because the errors are not low-dimensional; we did not test the other two. Post-hoc correction of the post-delay state\cite{jiang2026futurertc}, the closest learned alternative, corresponds to our mean-correction ablation, which gave smaller gains.
+
+DATS\cite{chen2020dats} hedges with an ensemble instead. In our comparison, ensemble hedging behaved as model averaging: it raised return by a similar amount with and without delay, and its committed-prefix planner lost as much to mismatch as a single model's. One possible explanation, which we did not test, is that members trained on the same data share much of their error through the delay, so their disagreement understates the error of any one of them. RCH draws instead on each model's measured errors. The ensemble also needs three trained models, three times the per-decision filtering and, at matched population, 2.9 times the call latency. Residual-calibrated hedging is therefore the option for a single pretrained model, and a complement to an ensemble where one is available.
+
+Several limitations apply. A conditional error model did not hedge better than the unconditional bank overall; its advantage appeared only against a fixed spread at the longer delay. Richer error models, or conformal calibration of their spread, may do better. The gains are confined to longer delays and differ by model and task; at $d=2$, hedging did not help. The environments are simulated and deterministic, and apart from one real-time check the delay is fixed per run. The anchor count $K$ was chosen from two values, and the population was not retuned for hedging. The ensemble comparison used one ensemble of three members per cell, so its intervals omit variation between ensembles. The analyses that separate model quality from delay compensation were post hoc. Larger ensembles, or members trained on different data, may hedge better. Predictability penalties hurt here, but we tried one form and one tuned strength. The diffusion model's real latency exceeds an episode on current hardware, so its results concern moderate delays that faster hardware would bring, and its closed-loop evaluation is too small (10 episodes per arm, one model) to test hedging.
+
+Adding CLIS-MPPI's feedback correction\cite{liu2026clis} to residual anchors is a natural next step. Adaptive replanning\cite{cheng2026adarep} and faster diffusion samplers\cite{song2021ddim,chen2024diffusionforcing} would shorten the delay itself, and hedging can be combined with either.
+
+%% ------------------------------------------------------------------ Methods
+\section{Methods}\label{sec:methods}
+
+\subsection{Environments and tasks}\label{sec:envs}
+
+We use DeepMind Control Suite tasks\cite{tassa2018dmc}, simulated in MuJoCo\cite{todorov2012mujoco}: cartpole swing-up, walker walk and cup catch are run with action repeat 2 and 500 decisions per episode, which gives decision periods of 0.02, 0.05 and 0.04~s. Returns are normalised as $(R-R_{\mathrm{rand}})/(R_{\mathrm{exp}}-R_{\mathrm{rand}})$ with reference pairs (880, 49), (985, 40) and (981, 55).
+
+\subsection{World models}\label{sec:models}
+
+The world models were trained offline on the same 2,000 episodes per task\cite{xia2026metrictrust}, within a separate study of offline evaluation metrics; this paper uses only their final checkpoints and none of that study's metrics or analyses. The families are a recurrent state-space model\cite{hafner2019planet}; a joint-embedding predictor conditioned on three frame embeddings\cite{maes2026lewm}; TD-MPC2\cite{hansen2023tdmpc2}, trained from three stacked frames; and MiniWorld-0.5B\cite{zhao2026miniworld} fine-tuned in Wan2.2 VAE latents\cite{wan2025}, sampled block by block with an autoregressive diffusion-forcing sampler\cite{chen2024diffusionforcing}. Only final checkpoints are used. Episodes use initial-state seeds 950,000--950,049, disjoint from any earlier evaluation of these checkpoints, and are shared across conditions within a model. A cell enters pooled estimates if its mean paused return is at least 0.15, a rule fixed before the runs; it excludes JEPA walker.
+
+\subsection{Planner}\label{sec:planner}
+
+MPPI\cite{williams2017mppi} uses population 512, 6 iterations, temperature 0.5 and horizon $H=32$ decisions, with a warm start shifted by the decisions executed, and scores candidates by the negative sum of predicted rewards.
+
+\subsection{Asynchronous schedules}\label{sec:async}
+
+Asynchronous schedules start with one plan from the initial observation with the simulator paused. Each subsequent call receives the current latent and the $d$ actions committed for execution during the call, and its output supplies the next $d$ committed actions. In the asynchronous schedules candidates are $d+H$ decisions long, where $H$ is the planning horizon, so $\mathcal{N}_d$, $\mathcal{A}_d$ and $\mathcal{C}_d$ make identical model calls.
+
+\subsection{Residual-calibrated hedging}\label{sec:method}
+
+Algorithm~\ref{alg:hedge} gives one planning call of residual-calibrated hedging in committed-prefix MPPI; residuals are drawn independently per episode and call.
+
+\begin{figure*}[t]
+\refstepcounter{algorithm}\label{alg:hedge}
+\hrule\smallskip
+\noindent\textbf{Algorithm \thealgorithm.} Residual-calibrated hedging in committed-prefix MPPI (one call)
+\smallskip\hrule\smallskip
+
+\begin{algorithmic}[1]
+\Require latent $z_t$, committed actions $c\in\mathbb{R}^{d\times m}$, warm start $\mu\in\mathbb{R}^{H\times m}$, residual bank $\mathcal{R}_d$, anchors $K$, population $N$, iterations $I$, temperature $\lambda$
+\State $\hat z \gets \mathrm{rollout}(z_t, c)$ \Comment{once per call}
+\State $\hat z_1 \gets \hat z$; $\hat z_k \gets \hat z + r_k$, $r_k\sim\mathcal{R}_d$, for $k=2,\dots,K$
+\State $\sigma\gets\sigma_0$
+\For{$i=1,\dots,I$}
+  \State sample $a^{(n)}\sim\mathcal{N}(\mu,\sigma^2)$, clipped to the action box, for $n=1,\dots,N$
+  \State $J_n \gets \frac{1}{K}\sum_{k} \mathrm{cost}(\hat z_k, a^{(n)})$ \Comment{all $K\cdot N$ rollouts in one batch}
+  \State $w_n\propto\exp(-(J_n-\min_j J_j)/\lambda)$; $\mu\gets\sum_n w_n a^{(n)}$; $\sigma\gets$ weighted standard deviation
+\EndFor
+\State \Return $\mu_{0:d}$ to commit, and $\mu$ shifted by $d$ as the next warm start
+\end{algorithmic}
+\smallskip\hrule
+\end{figure*}
+
+\subsection{Residual bank}\label{sec:bank}
+
+For each model and delay, 512 windows of training episodes are filtered with 16 frames of burn-in. The residual is $r=z_{t+d}-\mathrm{rollout}(z_t,a_{t:t+d})$, using the recorded actions. In the closed-loop runs the anchors were scored one after another (batch size 50). For latency measurements they were scored in one batched call; the two agree to $6\times10^{-6}$.
+
+\subsection{Learned heteroscedastic variant}\label{sec:learned}
+
+For each model and delay, 4,096 training windows give $(\hat z_{t+d}, z_t, a_{t:t+d})$ and the residual $r$. A two-layer network (512 SiLU units) predicts the residual's mean and per-dimension log-variance; inputs and targets are standardised. It is trained with a Gaussian negative log-likelihood and AdamW (learning rate $10^{-3}$, weight decay $10^{-4}$) for 3,000 steps of batch 256, keeping the weights with the best loss on a 10\% validation split. On held-out windows, its 95\% intervals covered 85--94\% of the residuals. In planning, the first anchor is $\hat z$ plus the predicted mean, and the others are draws from the predicted Gaussian.
+
+\subsection{Deployment recipe}\label{sec:recipe}
+
+\begin{enumerate}
+\item Measure the latency of the whole control loop, including frame encoding, and set $d$ to its 95th percentile divided by the decision period, rounded up (see `Fixed-delay evaluation matches real-time control when the delay covers the whole loop' in Results).
+\item Record the residual bank for that $d$ from the model's training data. This takes minutes and needs no retraining.
+\item Hedge over $K=4$ anchors at the planner's usual population, scoring them in one batch. Do not reduce the population to make room for anchors (Table~\ref{tab:contrasts}).
+\item If several independently trained models are available, an ensemble raises return with or without delay. At longer delays, hedge each member over its own residual bank as well (Table~\ref{tab:ensemble}).
+\end{enumerate}
+
+\subsection{Held-out study and ablations}\label{sec:heldout-methods}
+
+The mean-correction ablation uses one anchor at the corrected mean. The fixed-spread ablation draws anchors with the global residual standard deviation instead of the predicted one. For the hand-off penalty, a second network of the same form as the learned error model, trained on the same residuals but conditioned only on $(z_t, a_{t:t+d})$, predicts the log-variance of the residual. Each candidate's cost is increased by $\lambda\,\mathrm{sd}(J)\,u$, where $u$ is the within-population z-score of the predicted log-variance of the next call's anchor. The prediction is taken from the corrected anchor and the candidate's first $d$ free actions, which are the actions it would commit. The risk penalty is the anchor-averaged cost plus $\lambda$ times its standard deviation over anchors. Each $\lambda$ was chosen from $\{0.25, 0.5, 1.0\}$ by pooled return on the seed-0 models, using 20 episodes from seeds 970,000--970,019, by a rule fixed before the runs.
+
+\subsection{Ensemble and particle baselines}\label{sec:ensemble-methods}
+
+DATS\cite{chen2020dats} pushes particles from an ensemble of probabilistic dynamics models through the committed actions and averages each candidate's cost over them. Our ensemble is the three independently trained models of each family--task cell, the same checkpoints used individually in every other comparison. Models trained from different seeds have incompatible latent spaces, so a particle cannot move between members from one step to the next, as in the TS-1 propagation used by DATS. Each member instead keeps one particle for the whole rollout, the TS-$\infty$ propagation of PETS\cite{chua2018pets}. At every decision, each member filters its own latent from the same frames. At each call, each member rolls the committed actions through its own dynamics and scores the shared candidates with its own reward head, and a candidate's cost is the mean over the members. Members are evaluated one after another.
+
+The population-matched ensemble uses population 512 and 6 iterations, the setting of committed-prefix planning and RCH. The latency-matched ensemble uses 2 iterations, so that a call makes the same number of sequential model rollouts as one model at 6 iterations: three members times two iterations. A further exploratory arm combines the two methods: each member hedges over four anchors drawn from its own residual bank.
+
+The particle baseline applies only to the RSSM, the one family with a stochastic transition. Anchor 1 is the prediction, as in RCH. Anchors 2--4 are sampled from the model's own stochastic transition through the committed actions instead of from the residual bank.
+
+All baseline arms use $d\in\{4,8\}$ and the same initial states and planner noise as the other arms. Two post-hoc checks, each written into the study plan after the primary result and before its runs, complete the comparison. The first runs committed-prefix planning and RCH at 2 iterations on all 24 models, to test whether the smaller number of iterations explains the latency-matched result. The second runs the ensemble with the simulator paused, replanning every 1, 4 and 8 decisions at 6 and 2 iterations. This gives the ensemble's gain without delay and its own mismatch loss $R(\mathcal{P}_d)-R(\mathcal{X}_d)$, measured against the paused ensemble. For a contrast with the ensemble, each cell contributes the paired differences between the ensemble's return and each single model's return on the same initial state. The bootstrap resamples models and episodes as elsewhere. Each cell has only one ensemble, so the intervals contain no between-ensemble variation.
+
+\subsection{Diagnosis on held-out windows}\label{app:diagnosis}
+
+For each seed-0 model, 64 test windows and 256 calibration windows are drawn from held-out episodes. For each window, plans are made from the true filtered latent $z_{t+d}$, from the predicted latent $\hat z_{t+d}$, and from perturbed anchors, all with the same sampling noise. Regret is computed with the model's cost from $z_{t+d}$. The candidate corrections are a first-order update along the eight leading principal directions of calibration residuals, using central differences; removal of the mean residual; nearest-anchor selection among 16 anchors in whitened residual coordinates; and anchor-averaged scoring with 4 or 16 anchors.
+
+\subsection{Latency measurement}\label{app:latency}
+
+Latency is the wall-clock time of one call for one environment, from the latent being available to the committed actions being on the host, with CUDA synchronised at both ends. Reference measurements run on a node held exclusively: 20 warm-up and 200 timed calls per configuration for the latent families, and 2 warm-up and 5 timed calls for the diffusion model, from latents encoded from held-out frames. Hedged-call latencies (Table~\ref{tab:latency}) use 10 warm-up and 50 timed calls on a shared node.
+
+\subsection{Real-time check}\label{app:realtime}
+
+A simulator process steps one episode on a real-time clock. The planner process reads the frames as they arrive, filters them with the model, and writes plans into a shared action buffer. If no action has been written for a decision, the simulator holds the previous action and records an underrun; no underruns occurred. Before each run, 30 timed calls of the planner after 10 warm-up calls, without frame filtering, give the 95th-percentile latency. The committed prefix length is set to that latency divided by the decision period, rounded up, and the measurement is repeated once with the resulting prefix. Plan actions for decisions that have already executed when a call returns are dropped. Each configuration ran 30 episodes from the first 30 initial states of the fixed-delay runs, on a V100 node held exclusively.
+
+\subsection{Statistics and reproducibility}\label{sec:stats}
+
+All contrasts are paired within model and task through shared initial states and planner noise streams. Pooled estimates weight cells equally. Intervals are 95\% percentile intervals from a hierarchical bootstrap\cite{efron1993bootstrap} that resamples models within each cell and episodes within each model (10,000 resamples), or episodes only in the single-model pilot. Multiple contrasts are corrected with Holm's procedure\cite{holm1979simple}. Confirmatory contrasts are tested one-sided at $\alpha=0.05$ after Holm correction; each one-sided $p$ value is the share of bootstrap resamples of the pooled contrast at or below zero. The bootstrap makes no normality assumption about episode returns. Numbers after $\pm$ are standard errors of the mean (s.e.m.) over episodes. The pilot decision rule, the replication's confirmatory contrasts, the held-out study's tuning rule and contrasts, and their Holm corrections were written before the respective runs (see `Pre-specified hypotheses and decision rules'). In the held-out study, contrasts against committed-prefix planning and time-aligned execution were secondary and are reported without correction. The comparison with ensemble hedging claimed no direction, so its contrasts are two-sided, with $p=2\min(P_{\le 0}, P_{\ge 0})$ over bootstrap resamples. Its secondary contrasts and post-hoc checks are reported without correction.
+
+\subsection{Pre-specified hypotheses and decision rules}\label{app:prereg}
+
+See Supplemental Material~\cite{supplemental} for supplementary notes on the pre-specified decision rules and compute.
+
+Each rule below was written into the study plan before the runs it concerns. The full study design is \texttt{EXPERIMENT\_PLAN\_SIDE.md} in the code release.
+\begin{itemize}
+\item \textbf{Study 1 (4 October 2026).} H1: committed-prefix minus time-aligned return $>0$ at each of $d=2,4,8$, pooled over cells above the 0.15 floor. Result: $p=0.050$, not supported. H2: committed-prefix removes at least half of the time-aligned mismatch loss at $d=4,8$. Result: not supported (27--31\%).
+\item \textbf{Hedging pilot (5 October 2026, before its runs).} Contrast $R(K=16)-R(K=1)$ at $d=2,4,8$ on one model per cell. Rule: proceed if the 95\% interval lies above 0 at two or more delays; fall back if it includes 0 at all three. Result: proceed ($d=8$ and, marginally, $d=4$).
+\item \textbf{Replication (5 October 2026, before its runs).} Over 24 models, $R(K=16)-R(K=1)$ at $d=4$ and $d=8$, one-sided, Holm-corrected. Secondary: $d=2$, and $K=4$ against $K=1$. Result: supported at $d=8$ (Holm $p=0.0014$), not at $d=4$ ($p=0.19$).
+\item \textbf{Equal latency (5 October 2026, before its runs).} $R(K=4,\,N=512)-R(K=1,\,N=512)$ and $R(K=16,\,N=128)-R(K=1,\,N=512)$ at $d=4,8$, Holm over the four contrasts. Result: $K=4$ supported at both delays (Holm $p=0.035$, $0.0004$); $K=16$ at $N=128$ worse at both.
+\item \textbf{Held-out method study (6 October 2026, before its runs).} Tuning of the hand-off and risk penalty strengths on the seed-0 models with separate episodes, by a fixed rule (chosen: $\lambda_h=0.25$, $\lambda_r=0.5$; the hand-off penalty lowered tuning return at every strength). Primary contrasts on the 16 seed-1/seed-2 models at $d=4,8$, Holm over eight:
+\begin{itemize}
+\item C1: learned error model vs residual bank. Result: not supported ($+0.001$, $+0.011$).
+\item C2: hand-off penalty vs none. Result: not supported; the penalty lowered return ($-0.026$, $-0.021$).
+\item C3: hand-off vs risk penalty. Result: not supported ($-0.011$, $+0.006$).
+\item C4: full variant (learned model with hand-off penalty) vs committed prefix. Result: not supported ($-0.001$, $+0.026$).
+\end{itemize}
+Secondary: both hedges beat committed-prefix planning ($+0.025$/$+0.037$ for the bank, $+0.025$/$+0.047$ for the learned model, at $d=4$/$8$).
+\item \textbf{Ensemble and particle baselines (11 October 2026, before their runs).} RCH ($K=4$) against a three-model ensemble at matched population and at matched latency, $d=4,8$, two-sided, Holm over four. Results: RCH below the latency-matched ensemble at $d=4$ ($-0.042$, Holm $p=0.0008$); the other three differences favoured the ensemble with intervals including zero. Secondary: the ensemble against committed-prefix planning, the ensemble with RCH, and particle anchors (Table~\ref{tab:ensemble} and main text). Two post-hoc checks followed, each written into the plan before its runs: RCH at 2 iterations, and the paused ensemble (Methods, `Ensemble and particle baselines').
+\end{itemize}
+
+\subsection{Compute}\label{app:compute}
+
+Studies 1--3 and the hedging studies used about 30 GPU-hours (Study 1 and 2 returns), 15 (pilot), 30 (replication), 8 (equal latency), 46 (diffusion) and 13 (ensemble and particle baselines, with their post-hoc checks and timing), plus timing; no training. The ensemble reuses the three models trained for each cell.
+
+\subsection{Use of an LLM}\label{sec:llm}
+
+During preparation of this revision, OpenAI Codex, an LLM-based coding assistant, was used to apply author-directed wording changes to the abstract's latency statement and to adjust LaTeX pagination. For these revision tasks, it was not used to generate or analyse study data, design experiments or interpret results.
+
+%% ------------------------------------------------------------------ Back matter
+
+
+\section*{Data availability}
+
+The data supporting the findings of this study are available at \url{https://github.com/rxailab/residual-calibrated-hedging}.
+
+\section*{Code availability}
+
+The delay-in-decisions schedules, residual-calibrated hedging planner, delay-error model and analysis scripts are available at \url{https://github.com/rxailab/residual-calibrated-hedging}.
+
+
+\begin{acknowledgments}
+
+This work was supported in part by the UK EPSRC under Grant EP/P009727/2, and the Leverhulme Trust under Grant RF-2019-492.
+
+\end{acknowledgments}
+
+\section*{Author contributions}
+
+R.X. led the study, including methodology, software, experiments, analysis and manuscript preparation. R.J. supervised the project and contributed to manuscript review and editing. Both authors read and approved the final manuscript.
+
+
+\section*{Competing interests}
+
+The authors declare no competing interests.
+
+% REVTeX selects apsrev4-2 and writes the controls that retain reference titles.
+\bibliography{refs}
+
+\end{document}
