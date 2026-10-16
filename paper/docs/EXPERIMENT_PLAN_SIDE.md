@@ -578,3 +578,33 @@ Each has fresh data and a confirmatory contrast fixed here.
 **Analysis:** `latency/analyse_lewm.py`.
 
 **Budget:** about 10-20 GPU-hours on astro.
+
+### Amendment 2 to 15B (16 October 2026, after smoke tests and before any confirmatory run)
+
+**S2 is dropped.** In S2 (goal offset 50, budget 100; 20 episodes per arm), delay did not change success:
+- PushT: paused5 0.20, every asynchronous arm 0.20-0.25.
+- Cube: paused5 0.45, every asynchronous arm 0.40-0.45.
+
+LeWM rarely reaches a goal 50 steps away, and the first plan, made at rest, is never delayed. S1 has the same limitation: one delayed call per episode, after a first plan that succeeds about 92% of the time.
+
+**Hand-over setting (H, confirmatory).** Delay compensation matters when a plan must be computed while the system moves. In H, each evaluation episode starts with the system executing the expert's recorded actions from the start state (the dataset's actions; `latency/lewm.py --handover d`). The planner's first call is issued at the start and lasts d decisions:
+- cpp_d and rch_d take the d recorded blocks as the committed prefix;
+- aligned_d and naive_d plan d + 5 blocks from the start observation;
+- paused5 executes the d recorded blocks and then plans from the true state with the simulator paused, every 5 decisions. This is the exact-model counterpart of cpp_d.
+
+Later calls follow the amended schedule: each is issued d decisions before the current plan runs out. The goal lies 25 steps beyond the hand-over, as in LeWM's protocol: goal offset 25 + 5d (35 and 45) and budget 5d + 50 (60 and 70).
+
+The setting was chosen for its delay sensitivity, judged by paused5 against naive and aligned. In a 30-episode PushT smoke test at d = 2, paused5 succeeded 0.90, naive 0.07 and aligned 0.30. Smoke results for cpp and rch were also seen (30 episodes; differences in both directions) and are not used.
+
+**Seed 951,000.** The confirmatory episodes use seed 951,000 instead of 950,000. The 200 episodes per task share no episode with the smoke tests; seed 950,000 would have shared one row per setting.
+
+**Confirmatory (replaces the 15B and amendment 1 contrasts).** success(rch_d k4) - success(cpp_d) in H, pooled over pusht, cube and reacher with equal weight, at d = 2 and d = 4. One-sided, Holm over the two delays, paired bootstrap over episodes within task (10,000 resamples), 200 episodes per task and arm.
+
+**Secondary:**
+- The same contrast in S1 (LeWM's protocol with amendment 1's schedules; seed 951,000).
+- cpp_d vs aligned_d.
+- Mismatch loss, paused5 - X_d.
+- Per-task results.
+- Batch-1 call latency.
+
+**Runs.** `latency/runs_lewm.txt`: six hand-over jobs (task x d) and three S1 jobs.

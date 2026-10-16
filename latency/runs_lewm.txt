@@ -1,0 +1,9 @@
+pusht --handover 2 --goal-offset 35 --budget 60 --seed 951000 --arms paused5,cpp2,rch2k4,aligned2,naive2
+pusht --handover 4 --goal-offset 45 --budget 70 --seed 951000 --arms paused5,cpp4,rch4k4,aligned4,naive4
+cube --handover 2 --goal-offset 35 --budget 60 --seed 951000 --arms paused5,cpp2,rch2k4,aligned2,naive2
+cube --handover 4 --goal-offset 45 --budget 70 --seed 951000 --arms paused5,cpp4,rch4k4,aligned4,naive4
+reacher --handover 2 --goal-offset 35 --budget 60 --seed 951000 --arms paused5,cpp2,rch2k4,aligned2,naive2
+reacher --handover 4 --goal-offset 45 --budget 70 --seed 951000 --arms paused5,cpp4,rch4k4,aligned4,naive4
+pusht --seed 951000 --arms paused5,cpp2,rch2k4,aligned2,naive2,cpp4,rch4k4,aligned4,naive4
+cube --seed 951000 --arms paused5,cpp2,rch2k4,aligned2,naive2,cpp4,rch4k4,aligned4,naive4
+reacher --seed 951000 --arms paused5,cpp2,rch2k4,aligned2,naive2,cpp4,rch4k4,aligned4,naive4
