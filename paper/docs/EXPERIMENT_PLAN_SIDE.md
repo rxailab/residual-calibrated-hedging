@@ -647,3 +647,52 @@ Unlike the smaller latent models, LeWM's transformer predictor makes four anchor
 - RCH's gains are confined to models and tasks with a large value-aligned mismatch: the JEPA and TD-MPC2 cup-catch cells and RSSM walker.
 - On a third-party JEPA world model, committed-prefix planning leaves little mismatch, and hedging adds nothing.
 - In real time the estimate is positive but not significant.
+
+## 16. Second round for PRX Intelligence (16 October 2026, written before the runs)
+
+**Why.** After Section 15, RCH's evidence has three gaps:
+- its gains are concentrated in two cup-catch cells and RSSM walker, from only three tasks;
+- the real-time test was underpowered (+0.074, p = 0.082, 30 episodes per arm);
+- the third-party model left too little mismatch to test the method.
+
+The studies below address the first two directly. The third gap is addressed indirectly, with a pre-specified test of whether an offline statistic predicts where hedging helps.
+
+### 16A. Powered real-time replication
+
+- **Setup:** the protocol of 15C unchanged (six cup-catch models; calibrated d_est; arms rch, cpp and aligned; population 512, 6 iterations; exclusive V100). It uses 100 new episodes per arm and model, initial-state seeds 950,100-950,199, disjoint from 15C and from the calibration seed.
+- **Confirmatory:** real-time return(rch) - return(cpp) on these new episodes, normalised, pooled with equal cell weight, hierarchical bootstrap. One-sided, alpha = 0.05.
+- **Secondary:** the same pooled with the 15C episodes (130 per arm and model); cpp vs aligned.
+- **Code:** `latency/wallclock.py --seed0 950100 --episodes 100 --calibrate`, results in `results/latency/wallclock_v3`.
+
+### 16B. Three new tasks
+
+- **Tasks:** the other three tasks of the PlaNet pixel benchmark, reacher-easy, cheetah-run and finger-spin. Together with cartpole swing-up, walker walk and cup catch they make up the whole benchmark. They are chosen for that reason, not for any expected effect.
+- **Pipeline:** the main study's, unchanged except for the tasks.
+  - 2,000 episodes per task, collected with an epsilon ladder over the released TD-MPC2 agent at 128 px and packed to 64 px; episodes 1,900-1,999 are held out.
+  - RSSM, JEPA (3-frame history) and TD-MPC2, with 3 seeds each and the same training steps (60k, 60k, 100k): 27 new models. They are trained only for this paper and enter no analysis of the main study.
+- **Normalisation:** (R - R_rand) / (R_exp - R_rand), where R_exp is the mean return of the epsilon = 0 tier of the collected data and R_rand that of the epsilon = 1 tier.
+- **Floor rule:** as in Study 1, a cell enters if its mean paused1 return over the three models is at least 0.15.
+- **Arms** (population 512, 6 iterations, H = 32, 50 episodes from seeds 950,000-950,049): paused1, paused4, paused8, aligned4, aligned8, hcpp4k1, hcpp4k4, hcpp8k1 and hcpp8k4.
+- **Confirmatory:** R(K=4) - R(K=1) at d = 4 and d = 8, pooled with equal cell weight over the eligible new cells, hierarchical bootstrap. One-sided, Holm over the two delays.
+- **Secondary:**
+  - committed prefix vs time-aligned;
+  - the mismatch loss and the share of it removed by committed prefix and by RCH;
+  - per-cell gains;
+  - the same contrasts pooled over all 6 tasks.
+
+### 16C. When to hedge (secondary, pre-specified)
+
+- **Statistic:** for each model and d in {4, 8}, the offline hedging value V = (regret of the committed-prefix plan - regret of the K = 4 hedged plan) / regret of the stale-latent plan.
+  - It uses the diagnostic of `latency/diagnose_anchor.py`, on 64 held-out windows with the recorded actions as the prefix.
+  - Each regret is the model's cost from the true post-delay latent, relative to the plan made from that latent.
+- **Prediction:** the cell-mean V and the cell-mean closed-loop gain R(K=4) - R(K=1) are positively rank-correlated (Spearman, one-sided) across the (cell, d) pairs of all eligible cells.
+  - For the three original tasks this is a retrodiction.
+  - For the new tasks V is computed before their closed-loop results are read.
+- **Exploratory:** the same for LeWM, whose results are known.
+
+### Budget
+
+- 16A: about 6 x 6 hours of exclusive V100.
+- 16B: collection about 5 GPU-hours, training about 40, closed loop about 15.
+- 16C: about 5.
+- Wall-clock about one to two days.
