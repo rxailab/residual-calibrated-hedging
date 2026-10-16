@@ -1,0 +1,156 @@
+{
+ "gpu": "NVIDIA L40S",
+ "host": "gpu14",
+ "results": [
+  {
+   "task": "pusht",
+   "call": "paused",
+   "d": 0,
+   "K": null,
+   "L50_s": 0.3119936555012828,
+   "L95_s": 0.3413478643975395,
+   "decision_s": 0.5,
+   "delay_decisions": 1
+  },
+  {
+   "task": "pusht",
+   "call": "cpp",
+   "d": 2,
+   "K": null,
+   "L50_s": 0.3374892584979534,
+   "L95_s": 0.3381216480556759,
+   "decision_s": 0.5,
+   "delay_decisions": 1
+  },
+  {
+   "task": "pusht",
+   "call": "rch",
+   "d": 2,
+   "K": 4,
+   "L50_s": 1.1458797249943018,
+   "L95_s": 1.1482181485051115,
+   "decision_s": 0.5,
+   "delay_decisions": 3
+  },
+  {
+   "task": "pusht",
+   "call": "cpp",
+   "d": 4,
+   "K": null,
+   "L50_s": 0.3433632360029151,
+   "L95_s": 0.34357036419824,
+   "decision_s": 0.5,
+   "delay_decisions": 1
+  },
+  {
+   "task": "pusht",
+   "call": "rch",
+   "d": 4,
+   "K": 4,
+   "L50_s": 1.1583748430057312,
+   "L95_s": 1.1610793140433089,
+   "decision_s": 0.5,
+   "delay_decisions": 3
+  },
+  {
+   "task": "cube",
+   "call": "paused",
+   "d": 0,
+   "K": null,
+   "L50_s": 0.3128165509988321,
+   "L95_s": 0.3436107481524232,
+   "decision_s": 0.25,
+   "delay_decisions": 2
+  },
+  {
+   "task": "cube",
+   "call": "cpp",
+   "d": 2,
+   "K": null,
+   "L50_s": 0.3395982250003726,
+   "L95_s": 0.34055671940514004,
+   "decision_s": 0.25,
+   "delay_decisions": 2
+  },
+  {
+   "task": "cube",
+   "call": "rch",
+   "d": 2,
+   "K": 4,
+   "L50_s": 1.155654948001029,
+   "L95_s": 1.1591479569018701,
+   "decision_s": 0.25,
+   "delay_decisions": 5
+  },
+  {
+   "task": "cube",
+   "call": "cpp",
+   "d": 4,
+   "K": null,
+   "L50_s": 0.3454700700021931,
+   "L95_s": 0.3458125763987482,
+   "decision_s": 0.25,
+   "delay_decisions": 2
+  },
+  {
+   "task": "cube",
+   "call": "rch",
+   "d": 4,
+   "K": 4,
+   "L50_s": 1.167249386497133,
+   "L95_s": 1.1684777444992505,
+   "decision_s": 0.25,
+   "delay_decisions": 5
+  },
+  {
+   "task": "reacher",
+   "call": "paused",
+   "d": 0,
+   "K": null,
+   "L50_s": 0.31289683999784756,
+   "L95_s": 0.34216063729909363,
+   "decision_s": 0.1,
+   "delay_decisions": 4
+  },
+  {
+   "task": "reacher",
+   "call": "cpp",
+   "d": 2,
+   "K": null,
+   "L50_s": 0.3392412905013771,
+   "L95_s": 0.3394126671475533,
+   "decision_s": 0.1,
+   "delay_decisions": 4
+  },
+  {
+   "task": "reacher",
+   "call": "rch",
+   "d": 2,
+   "K": 4,
+   "L50_s": 1.1616760640026769,
+   "L95_s": 1.1649069982035143,
+   "decision_s": 0.1,
+   "delay_decisions": 12
+  },
+  {
+   "task": "reacher",
+   "call": "cpp",
+   "d": 4,
+   "K": null,
+   "L50_s": 0.34522642500087386,
+   "L95_s": 0.3454830550996121,
+   "decision_s": 0.1,
+   "delay_decisions": 4
+  },
+  {
+   "task": "reacher",
+   "call": "rch",
+   "d": 4,
+   "K": 4,
+   "L50_s": 1.1797960935000447,
+   "L95_s": 1.1820944802995654,
+   "decision_s": 0.1,
+   "delay_decisions": 12
+  }
+ ]
+}
