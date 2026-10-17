@@ -150,7 +150,8 @@ def run_arm(ad, meta, task, arm, cfg, episodes, workers, dev, amp, T, fake, plan
         pc = np.asarray(timer.per_call)
         return {"arm": arm, "returns": env.ret.tolist(), "return_mean": float(env.ret.mean()),
                 "episodes": episodes, "seeds": [seeds[0], seeds[-1]], "decisions": T, "H": H,
-                "n_calls": n_calls, "t_plan_s": float(pc.sum()), "t_env_s": env.t_env,
+                "n_calls": n_calls, "t_plan_s": float(pc.sum()), "t_plan_call_mean_s": float(pc.mean()),
+                "t_plan_call_p95_s": float(np.percentile(pc, 95)), "t_env_s": env.t_env,
                 "t_wall_s": time.time() - t0, "nonfinite_frac": planner.n_bad / max(planner.n_all, 1),
                 "batch_size": episodes, "K": K, "q": q, "iters_ref": iref,
                 "bank_rms_d": float(np.sqrt((bank_d ** 2).sum(1).mean())),
