@@ -884,3 +884,14 @@ This is exact for the calibration window itself, and K = 1 is committed-prefix p
 **Second Section 19 deviation (17 October 2026, at the author's request).** The last seven models (array tasks 14-20, the seed-2 model of each cell) were queued behind the main study on the V100s. They run on astro (L40 or L40S, shared node, 4 CPUs) as array 25268025.
 - Each model still runs all its arms on one GPU type with its own calibrated d_est, and every result records its GPU.
 - The analysis is unchanged; the hardware subsets are reported descriptively.
+
+### Section 19 result (17 October 2026; `results/latency/wallclock_v4.json`): supported
+
+- **Confirmatory:** real-time htr - cpp = +0.055 [+0.031, +0.081], one-sided p < 0.0001, 21 models in 7 cells.
+- **Secondary:**
+  - rch - cpp = +0.037 [+0.012, +0.062], p = 0.002;
+  - htr - rch = +0.018 [-0.004, +0.039], p = 0.055.
+- **By model:** htr beats cpp on 16 of 21. TD-MPC2 cup has none (-0.03, -0.02, -0.08), and TD-MPC2 reacher is mixed.
+- No underruns.
+- **Calibrated d:** 2-5 on cup, walker, finger and reacher; 5-12 on RSSM cheetah. It is shorter on the faster astro GPUs.
+- **Descriptive, by hardware:** exclusive V100 nodes +0.117 (models 0-4, the seed-0 model of five cells); shared nodes +0.038. Hardware is confounded with model seed and delay length.
