@@ -833,3 +833,23 @@ This is exact for the calibration window itself, and K = 1 is committed-prefix p
 - **Contrasts:** log vs additive anchors, and log anchors vs committed prefix. Reported without correction.
 
 **Variants tried after 17B, reported in full:** this one.
+
+### Section 18 results (17 October 2026)
+
+**18A, log-probability anchors, released TD-MPC2, new episodes (`results/latency/s18.json`): not supported.**
+- rchl - cpp = +0.008 [-0.020, +0.037] at d = 4 and -0.030 [-0.088, +0.017] at d = 8 (Holm p = 0.60 and 0.83).
+- rchl - rch (additive anchors) = +0.008 and +0.004.
+- The per-task pattern is unchanged: hedging helps cheetah and reacher and hurts walker and finger.
+- The off-simplex explanation is rejected.
+
+**18B, the 15 pixel TD-MPC2 models (secondary):**
+- log - additive anchors: +0.008 and +0.001;
+- log anchors - CPP: +0.028 (p = 0.013) and +0.016;
+- additive anchors - CPP: +0.020 and +0.015.
+
+**Manuscript:**
+- New sections and tables: hedge-then-refine (Table XII) and the released TD-MPC2 models (Table XI), with the log-probability follow-up.
+- The real-time iteration scheme is credited for re-anchoring.
+- Abstract, Introduction, Discussion, Methods, pre-registration list and compute updated.
+
+**Compute, Sections 17-18:** 22.5 GPU-hours.
