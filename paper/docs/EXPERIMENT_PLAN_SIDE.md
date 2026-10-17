@@ -880,3 +880,7 @@ This is exact for the calibration window itself, and K = 1 is committed-prefix p
 - Every model runs all of its arms under one condition, and d_est is calibrated per model, so the within-model contrasts are unaffected.
 - Other jobs on a shared node can add CPU contention, which the calibration captures only at the start of the run.
 - The confirmatory analysis is unchanged. The exclusive and shared subsets are reported descriptively.
+
+**Second Section 19 deviation (17 October 2026, at the author's request).** The last seven models (array tasks 14-20, the seed-2 model of each cell) were queued behind the main study on the V100s. They run on astro (L40 or L40S, shared node, 4 CPUs) as array 25268025.
+- Each model still runs all its arms on one GPU type with its own calibrated d_est, and every result records its GPU.
+- The analysis is unchanged; the hardware subsets are reported descriptively.
