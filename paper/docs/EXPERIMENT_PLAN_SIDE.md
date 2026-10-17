@@ -788,3 +788,48 @@ Existing comparators are `hcpp{d}k1` and `hcpp{d}k4`.
   - the offline value V computed from TD-MPC2's own cost, as in Section 16C.
 
 **Budget:** 17A about 15 GPU-hours; 17B about 10 GPU-hours plus implementation.
+
+### Section 17 results (17 October 2026)
+
+**17A, hedge-then-refine, 45 models in 15 cells (`results/latency/htr.json`): supported at d = 8, not at d = 4.**
+
+| Contrast | d = 4 | d = 8 |
+|---|---|---|
+| HTR - RCH (confirmatory, Holm) | +0.008 [-0.004, +0.020], p = 0.08 | +0.015 [+0.004, +0.027], p = 0.0098 |
+| HTR - CPP | +0.032 | +0.043 |
+| RCH - CPP (for comparison) | +0.023 | +0.027 |
+| Re-anchored CPP - CPP | +0.015 | +0.018 |
+| HTR - re-anchored CPP | +0.017 | +0.025 |
+| Mismatch loss, CPP -> HTR | 0.082 -> 0.050 (39 %) | 0.113 -> 0.070 (38 %) |
+
+**17B, released TD-MPC2, 17 models in 6 tasks (`results/latency/tdmpc2_released.json`): not supported.**
+- rch - cpp = +0.004 [-0.025, +0.033] at d = 4 and -0.019 [-0.078, +0.025] at d = 8 (Holm p = 0.81).
+- cpp - naive: +0.66 to +0.73.
+- cpp leaves a large mismatch: 0.018, 0.106 and 0.389 at d = 2, 4 and 8.
+- Per task, hedging helped cheetah (+0.15 at d = 4) and hurt walker and finger.
+
+**Diagnosis, after the result.** TD-MPC2's latent is 64 softmax groups of 8 (SimNorm). Adding another window's residual leaves the simplex: 6-16 % of anchor entries are negative, with negative mass per group of 0.01-0.11. The negative mass is largest on walker and finger, where hedging hurt, and smaller on cheetah and cup.
+
+## 18. Follow-up: anchors in the latent's natural coordinates (17 October 2026, after 17B, before these runs)
+
+**Hypothesis**, formed after the 17B result. For a softmax-group latent, residuals should be taken in log-probability coordinates, so that anchors stay on the model's latent manifold:
+- per group g, rho_g = log z_g - log z_hat_g on the calibration window;
+- the anchor is softmax_g(log z_hat_g + rho_g).
+
+This is exact for the calibration window itself, and K = 1 is committed-prefix planning. The 17B null remains the pre-registered third-party result; this is a separate test.
+
+### 18A (confirmatory)
+
+- **Models:** the 17 released TD-MPC2 models.
+- **Episodes:** new initial states, seeds 950,100-950,149, disjoint from 17B.
+- **Arms:** paused1, cpp{4,8}, rch{4,8}k4 (additive, as in 17B) and rchl{4,8}k4 (log-space anchors). Pipelined delay, as in 17B.
+- **Confirmatory:** R(rchl_d) - R(cpp_d) at d = 4 and d = 8, pooled with equal task weight, hierarchical bootstrap. One-sided, Holm over the two delays.
+- **Secondary:** rchl vs rch.
+
+### 18B (secondary)
+
+- **Models:** our 15 pixel TD-MPC2 models in the 5 eligible cells (cartpole, cup, walker, reacher, finger), which use the same SimNorm latent.
+- **Arm:** `hcpp{4,8}k4l` (log-space anchors), on the standard seeds 950,000-950,049, paired with the existing hcpp{d}k1 and hcpp{d}k4 arms.
+- **Contrasts:** log vs additive anchors, and log anchors vs committed prefix. Reported without correction.
+
+**Variants tried after 17B, reported in full:** this one.
