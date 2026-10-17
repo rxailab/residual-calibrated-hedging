@@ -853,3 +853,23 @@ This is exact for the calibration window itself, and K = 1 is committed-prefix p
 - Abstract, Introduction, Discussion, Methods, pre-registration list and compute updated.
 
 **Compute, Sections 17-18:** 22.5 GPU-hours.
+
+## 19. Powered real-time test of hedge-then-refine (17 October 2026, written before the runs)
+
+**Why.** Both real-time tests of RCH estimated about +0.07 but missed significance (p = 0.082 and 0.051). The intervals were wide because six models disagreed, not because of episode noise. This study tests the stronger planner, hedge-then-refine, on more models. Real time is where its equal-latency claim matters, since its refinement must fit inside the call.
+
+**Cells.** The rule, fixed here from the fixed-delay results of 17A: cells whose hedge-then-refine gain over committed prefix, averaged over d = 4 and 8, is at least 0.03. Seven cells qualify: JEPA cup, TD-MPC2 cup, RSSM cheetah, JEPA finger, TD-MPC2 finger, TD-MPC2 reacher and RSSM walker, 21 models. Like 15C, this tests whether the gain survives real time on the cells where it exists. It is not a test of generality.
+
+**Protocol (`latency/wallclock.py`).**
+- Arms: htr, cpp and rch.
+- htr runs rch's first five iterations from the latent at the call's start. It then filters the frames that arrived meanwhile and re-anchors the last iteration on the latest latent, with the committed actions still to run as its prefix. The refinement is skipped when none remain.
+- d_est is calibrated from one unscored real-time episode of the slowest arm (htr), as in 15C.
+- Population 512, 6 iterations, 50 episodes per arm and model, initial-state seeds 950,200-950,249 (new). V100 nodes held exclusively; results in `results/latency/wallclock_v4`.
+
+**Confirmatory:** real-time normalised return(htr) - return(cpp), pooled with equal cell weight over the 7 cells, hierarchical bootstrap (models within cell, then episodes paired by seed). One-sided, alpha = 0.05.
+
+**Secondary:**
+- htr vs rch, and rch vs cpp;
+- realised decisions per call, underruns, and the share of calls refined.
+
+**Budget:** 21 jobs of about 1 hour each on exclusive V100 nodes.
