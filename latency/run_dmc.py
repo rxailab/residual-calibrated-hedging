@@ -8,8 +8,9 @@ already have a result:
   results/latency/dmc/<family>/<task>/<run>/pop<P>_it<I>/<arm>.json
 
 Arms beyond the schedules (latency/schedule.py): hcpp<d>k<K> (RCH, latency/hedge.py),
-the delay-error arms (latency/delay_error.py) and pcpp<d>k<K> (particle anchors from the
-RSSM's stochastic transition, latency/ensemble.py).
+the delay-error arms (latency/delay_error.py), pcpp<d>k<K> (particle anchors from the
+RSSM's stochastic transition, latency/ensemble.py) and rcpp<d>k<K>r<m> (hedge-then-refine: the
+last m MPPI iterations re-anchored on a fresher latent, latency/refine.py).
 
 Presets
   study1  paused1; paused, naive, aligned, cpp at d in {2, 4, 8, 16}; naive,
@@ -132,7 +133,28 @@ def run_arm(ad, meta, task, arm, cfg, episodes, workers, dev, amp, T, fake, plan
     extra = {}
     m = re.fullmatch(r"hcpp(\d+)k(\d+)", arm)
     mp = re.fullmatch(r"pcpp(\d+)k(\d+)", arm)
+    mr = re.fullmatch(r"rcpp(\d+)k(\d+)r(\d+)", arm)
     pe = parse_de(arm)
+    if mr:                                      # hedge-then-refine (latency/refine.py, Section 17A)
+        import math
+        from latency.refine import run_reanchor
+        d, K, iref = int(mr.group(1)), int(mr.group(2)), int(mr.group(3))
+        q = max(1, math.ceil(d * iref / cfg.iterations))
+        bank_d, bank_q = residual_bank(ad, task, d), residual_bank(ad, task, q)
+        mc_d = make_cost_hedged(ad, cfg.population, dev, amp, d, bank_d, K, H)
+        mc_q = make_cost_hedged(ad, cfg.population, dev, amp, q, bank_q, K, H, gen_seed=6)
+        try:
+            n_calls = run_reanchor(d, H, T, planner, mc_d, mc_q, mc_d, env, A, timer, iref)
+        finally:
+            env.close()
+        pc = np.asarray(timer.per_call)
+        return {"arm": arm, "returns": env.ret.tolist(), "return_mean": float(env.ret.mean()),
+                "episodes": episodes, "seeds": [seeds[0], seeds[-1]], "decisions": T, "H": H,
+                "n_calls": n_calls, "t_plan_s": float(pc.sum()), "t_env_s": env.t_env,
+                "t_wall_s": time.time() - t0, "nonfinite_frac": planner.n_bad / max(planner.n_all, 1),
+                "batch_size": episodes, "K": K, "q": q, "iters_ref": iref,
+                "bank_rms_d": float(np.sqrt((bank_d ** 2).sum(1).mean())),
+                "bank_rms_q": float(np.sqrt((bank_q ** 2).sum(1).mean()))}
     if mp:                                      # particle anchors, RSSM only (latency/ensemble.py)
         from latency.ensemble import make_cost_particles
         d, K = int(mp.group(1)), int(mp.group(2))

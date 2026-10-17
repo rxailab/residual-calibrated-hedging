@@ -111,6 +111,50 @@ def test_shift_invariance():
     assert torch.allclose(mu1, mu2, atol=1e-10)
 
 
+
+
+# --- Section 17A: hedge-then-refine (latency/refine.py) ---------------------------------------
+from latency.refine import mppi_run, run_reanchor  # noqa: E402
+
+
+def test_mppi_run_equals_call():
+    """mppi_run from (warm, init_std) for all iterations is PrefixMPPI.__call__."""
+    cfg = MPPIConfig(population=64, iterations=3, temperature=0.5)
+    mk = make_cost_factory(A_TRUE, cfg.population)
+    warm = torch.zeros((E, 8, M), dtype=torch.float64)
+    pre = 0.3 * torch.ones((E, 2, M), dtype=torch.float64)
+    p1 = PrefixMPPI(cfg, torch.Generator().manual_seed(5), "cpu")
+    p2 = PrefixMPPI(cfg, torch.Generator().manual_seed(5), "cpu")
+    a = p1(mk(X0), warm, pre)
+    b, _ = mppi_run(p2, mk(X0), warm, torch.full_like(warm, cfg.init_std), cfg.iterations, pre)
+    assert torch.allclose(a, b, atol=0, rtol=0)
+
+
+def run_re(d, A_model=A_TRUE, H=8, T=40):
+    cfg = MPPIConfig(population=64, iterations=3, temperature=0.5)
+    planner = PrefixMPPI(cfg, torch.Generator().manual_seed(123), "cpu")
+    env = LinearEnv()
+    mk = make_cost_factory(A_model, cfg.population)
+    run_reanchor(d, H, T, planner, mk, mk, mk, env, M)
+    return env.ret, torch.stack(env.actions, 1)
+
+
+@param("d", [2, 4])
+def test_reanchor_exact(d):
+    """With an exact model, re-anchoring on the later latent changes nothing: the re-anchored
+    committed prefix reproduces committed-prefix planning (same noise stream)."""
+    r_c, a_c = run(f"cpp{d}")
+    r_r, a_r = run_re(d)
+    assert torch.allclose(a_c, a_r, atol=1e-9), (a_c - a_r).abs().max()
+
+
+def test_reanchor_inexact_departs():
+    A_bad = A_TRUE + 0.05 * torch.eye(N, dtype=torch.float64)
+    r_c, a_c = run("cpp4", A_model=A_bad)
+    r_r, a_r = run_re(4, A_model=A_bad)
+    assert not torch.allclose(a_c, a_r, atol=1e-6)
+
+
 if __name__ == "__main__":
     for name, f in list(globals().items()):
         if name.startswith("test_"):
