@@ -735,3 +735,56 @@ The studies below address the first two directly. The third gap is addressed ind
 - All 30 pairs: +0.42, p = 0.010.
 - LeWM (exploratory): V between -0.013 and +0.024, and no closed-loop gain.
 - Reading: V tracks the gain where it is large (cup catch, finger), but it is not a reliable prospective rule.
+
+## 17. Third round: a larger effect and a positive third-party test (17 October 2026, written before the runs)
+
+**Why.** The remaining weaknesses:
+- typical gains of 0.02-0.03;
+- real time at p near 0.05;
+- a null on a third-party model;
+- a core idea close to existing hedging.
+
+The stochastic-programming decomposition (Section 16C) says hedging recovers only the value of the stochastic solution. The larger remainder, the value of information, needs a fresher observation. 17A tests a method that attacks both parts at no extra compute or latency. 17B tests RCH on a widely used third-party model in the delay setting of DATS.
+
+### 17A. Hedge-then-refine (re-anchored hedging)
+
+**Method.** It keeps RCH's budget, 6 MPPI iterations per call, and splits them:
+1. The first 5 iterations are RCH's, from the latent at the start of the call, with the d committed actions as the prefix and K = 4 anchors from the d-step residual bank.
+2. The last iteration is re-anchored on the latent observed q = ceil(d/6) decisions before the plan takes effect. q is that iteration's share of the call's latency, rounded up. The last q committed actions are the prefix, and the iteration starts from the mean and standard deviation of the first 5. It hedges over K = 4 anchors from a q-step residual bank.
+
+Total compute and latency equal RCH's, and the plan still takes effect d decisions after the call starts.
+
+**Arms** (all 45 eligible models of the six tasks, population 512, 50 episodes, seeds 950,000-950,049, d in {4, 8}):
+- `rcpp{d}k4r1`: hedge-then-refine;
+- `rcpp{d}k1r1`: re-anchored committed prefix, no hedging.
+
+Existing comparators are `hcpp{d}k1` and `hcpp{d}k4`.
+
+**Confirmatory:** R(hedge-then-refine) - R(RCH, K = 4) at d = 4 and d = 8, pooled with equal cell weight over the 15 eligible cells, hierarchical bootstrap. One-sided, Holm over the two delays.
+
+**Secondary:**
+- hedge-then-refine vs committed prefix;
+- re-anchored committed prefix vs committed prefix;
+- hedge-then-refine vs re-anchored committed prefix;
+- per-cell results and the share of the mismatch loss removed.
+
+### 17B. Released TD-MPC2 world models (third party)
+
+- **Models:** the official single-task, state-based, 5M-parameter TD-MPC2 checkpoints (Hansen et al.; seeds 1-3) for the six PlaNet tasks, 18 models. The planner is TD-MPC2's own MPPI: horizon 3, 6 iterations, 512 samples, 64 elites, 24 policy trajectories, value bootstrap. It is re-implemented in `envs/data_agent.py`; settings unchanged.
+- **Delay setting:** pipelined constant delay, the setting of DATS.
+  - A call starts at every decision from the current observation and returns d decisions later with one action, the one for decision t + d.
+  - naive_d plans from the current latent as if no time passed.
+  - cpp_d rolls the d pending actions through the model and plans from the predicted latent.
+  - rch_d plans over K = 4 anchors, the prediction plus residuals from a d-step bank in TD-MPC2's latent space, built from the six tasks' collected datasets (D_train). Each candidate's value is the mean over anchors, and the policy-prior trajectories start from the prediction.
+  - paused1, which replans every decision with the simulator waiting, is the reference. paused1 minus a delayed arm is pure mismatch loss.
+  - The first d actions of every episode, for every delayed arm, come from TD-MPC2's policy prior rolled through its model from the first observation.
+- **Delays:** d in {2, 4, 8}. 50 episodes per arm, seeds 950,000-950,049. Normalisation pairs as in the pixel study. Floor rule: paused1 of at least 0.15.
+- **Confirmatory:** R(rch_d) - R(cpp_d) at d = 4 and d = 8, pooled with equal task weight over the eligible tasks (3 models each), hierarchical bootstrap. One-sided, Holm over the two delays.
+- **Secondary:**
+  - d = 2;
+  - cpp vs naive;
+  - mismatch loss paused1 - X_d;
+  - per-task results;
+  - the offline value V computed from TD-MPC2's own cost, as in Section 16C.
+
+**Budget:** 17A about 15 GPU-hours; 17B about 10 GPU-hours plus implementation.
