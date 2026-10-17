@@ -873,3 +873,10 @@ This is exact for the calibration window itself, and K = 1 is committed-prefix p
 - realised decisions per call, underruns, and the share of calls refined.
 
 **Budget:** 21 jobs of about 1 hour each on exclusive V100 nodes.
+
+**Section 19 deviation (17 October 2026, during the runs, at the author's request).** The exclusive nodes held whole V100 nodes (32 CPUs, 3 GPUs each) and blocked the main study.
+- Models 0-4 (array 25261043) finish on exclusive nodes.
+- Models 5-20 (array 25261597) run on shared nodes with one V100 and 4 CPUs.
+- Every model runs all of its arms under one condition, and d_est is calibrated per model, so the within-model contrasts are unaffected.
+- Other jobs on a shared node can add CPU contention, which the calibration captures only at the start of the run.
+- The confirmatory analysis is unchanged. The exclusive and shared subsets are reported descriptively.

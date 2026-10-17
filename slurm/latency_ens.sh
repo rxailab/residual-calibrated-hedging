@@ -2,7 +2,7 @@
 #SBATCH --job-name=mt-lat-ens
 #SBATCH --partition=astro
 #SBATCH --gres=gpu:1
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=4
 #SBATCH --mem=48G
 #SBATCH --time=08:00:00
 #SBATCH --nice=100
@@ -13,7 +13,7 @@
 #   sbatch --array=0-15 --export=ALL,LINES=latency/runs_ensemble.txt slurm/latency_ens.sh
 set -e
 export PYTHONNOUSERSITE=1 MUJOCO_GL=egl PYTHONPATH=${RCH_ROOT:-/mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging}
-export DMC_ENV_WORKERS=${DMC_ENV_WORKERS:-6}
+export DMC_ENV_WORKERS=${DMC_ENV_WORKERS:-3}
 export CKPT_KEEP=${CKPT_KEEP:-/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep}   # model checkpoints (not in this repo)
 PY=/mmfs1/storage/users/xiar3/envs/metrictrust/bin/python
 R=${RCH_ROOT:-/mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging}

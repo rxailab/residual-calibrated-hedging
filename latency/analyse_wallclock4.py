@@ -49,9 +49,19 @@ def contrast(a, b, rng):
 
 def main():
     rng = np.random.default_rng(20261022)
+    global CELLS
     out = {"confirmatory_htr_vs_cpp": contrast("htr", "cpp", rng),
            "secondary": {"htr_vs_rch": contrast("htr", "rch", rng), "rch_vs_cpp": contrast("rch", "cpp", rng)},
            "runs": {}}
+    # descriptive (deviation of 17 October): models on exclusive nodes (array tasks 0-4) and on shared nodes
+    allc = dict(CELLS)
+    order = [l.strip().split("/dmc/")[1].rsplit("/", 1)[0] for l in open(ROOT / "latency" / "runs_wallclock_v4.txt")]
+    excl = {f"{o.split('/')[0]}_{o.split('/')[1]}_{o.split('/')[2]}" for o in order[:5]}
+    for name, keep in (("exclusive_nodes", lambda r: r in excl), ("shared_nodes", lambda r: r not in excl)):
+        CELLS = {c: [r for r in rs if keep(r)] for c, rs in allc.items()}
+        CELLS = {c: rs for c, rs in CELLS.items() if rs}
+        out["secondary"][f"htr_vs_cpp_{name}"] = contrast("htr", "cpp", rng)
+    CELLS = allc
     for c, runs in CELLS.items():
         for run in runs:
             out["runs"][run] = {}
