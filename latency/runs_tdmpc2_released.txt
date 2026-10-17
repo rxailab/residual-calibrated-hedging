@@ -1,0 +1,17 @@
+cartpole-swingup 2
+cartpole-swingup 3
+walker-walk 1
+walker-walk 2
+walker-walk 3
+cup-catch 1
+cup-catch 2
+cup-catch 3
+reacher-easy 1
+reacher-easy 2
+reacher-easy 3
+cheetah-run 1
+cheetah-run 2
+cheetah-run 3
+finger-spin 1
+finger-spin 2
+finger-spin 3
