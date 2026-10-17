@@ -131,7 +131,7 @@ def run_arm(ad, meta, task, arm, cfg, episodes, workers, dev, amp, T, fake, plan
     timer = Timer(dev)
     t0 = time.time()
     extra = {}
-    m = re.fullmatch(r"hcpp(\d+)k(\d+)", arm)
+    m = re.fullmatch(r"hcpp(\d+)k(\d+)(l?)", arm)
     mp = re.fullmatch(r"pcpp(\d+)k(\d+)", arm)
     mr = re.fullmatch(r"rcpp(\d+)k(\d+)r(\d+)", arm)
     pe = parse_de(arm)
@@ -170,10 +170,16 @@ def run_arm(ad, meta, task, arm, cfg, episodes, workers, dev, amp, T, fake, plan
         extra = {"kind": kind, "K": K, "penalty": pen, "lam": lam}
     elif m:                                       # residual-hedged committed prefix (latency/hedge.py)
         d, K = int(m.group(1)), int(m.group(2))
-        bank = residual_bank(ad, task, d)
-        make_cost = make_cost_hedged(ad, cfg.population, dev, amp, d, bank, K, H)
+        if m.group(3):                              # Section 18B: log-space anchors (SimNorm latents)
+            from latency.hedge import residual_bank_log, log_anchor
+            bank = residual_bank_log(ad, task, d)
+            make_cost = make_cost_hedged(ad, cfg.population, dev, amp, d, bank, K, H, anchor=log_anchor)
+        else:
+            bank = residual_bank(ad, task, d)
+            make_cost = make_cost_hedged(ad, cfg.population, dev, amp, d, bank, K, H)
         sched = f"cpp{d}"
-        extra = {"K": K, "bank_n": len(bank), "bank_rms": float(np.sqrt((bank ** 2).sum(1).mean()))}
+        extra = {"K": K, "bank_n": len(bank), "bank_rms": float(np.sqrt((bank ** 2).sum(1).mean())),
+                 "anchors": "log" if m.group(3) else "additive"}
     else:
         make_cost, sched = make_cost_factory(ad, cfg.population, dev, amp), arm
     try:

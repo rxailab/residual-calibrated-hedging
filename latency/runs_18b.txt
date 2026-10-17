@@ -1,0 +1,15 @@
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/tdmpc2/cartpole-swingup/seed0/step0100000.pt --arms hcpp4k4l,hcpp8k4l
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/tdmpc2/cartpole-swingup/seed1/step0100000.pt --arms hcpp4k4l,hcpp8k4l
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/tdmpc2/cartpole-swingup/seed2/step0100000.pt --arms hcpp4k4l,hcpp8k4l
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/tdmpc2/cup-catch/seed0/step0100000.pt --arms hcpp4k4l,hcpp8k4l
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/tdmpc2/cup-catch/seed1/step0100000.pt --arms hcpp4k4l,hcpp8k4l
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/tdmpc2/cup-catch/seed2/step0100000.pt --arms hcpp4k4l,hcpp8k4l
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/tdmpc2/walker-walk/seed0/step0100000.pt --arms hcpp4k4l,hcpp8k4l
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/tdmpc2/walker-walk/seed1/step0100000.pt --arms hcpp4k4l,hcpp8k4l
+/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep/dmc/tdmpc2/walker-walk/seed2/step0100000.pt --arms hcpp4k4l,hcpp8k4l
+/mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging/checkpoints_new/dmc/tdmpc2/reacher-easy/seed0/step0100000.pt --arms hcpp4k4l,hcpp8k4l
+/mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging/checkpoints_new/dmc/tdmpc2/reacher-easy/seed1/step0100000.pt --arms hcpp4k4l,hcpp8k4l
+/mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging/checkpoints_new/dmc/tdmpc2/reacher-easy/seed2/step0100000.pt --arms hcpp4k4l,hcpp8k4l
+/mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging/checkpoints_new/dmc/tdmpc2/finger-spin/seed0/step0100000.pt --arms hcpp4k4l,hcpp8k4l
+/mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging/checkpoints_new/dmc/tdmpc2/finger-spin/seed1/step0100000.pt --arms hcpp4k4l,hcpp8k4l
+/mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging/checkpoints_new/dmc/tdmpc2/finger-spin/seed2/step0100000.pt --arms hcpp4k4l,hcpp8k4l

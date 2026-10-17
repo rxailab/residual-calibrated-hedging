@@ -37,7 +37,8 @@ def residual_bank(ad, task, d, n=512, seed=11, H=32):
     return np.concatenate(out)
 
 
-def make_cost_hedged(ad, P, dev, amp, d, bank, K, H, gen_seed=5, batch_anchors=False, max_width=51_200):
+def make_cost_hedged(ad, P, dev, amp, d, bank, K, H, gen_seed=5, batch_anchors=False, max_width=51_200,
+                     anchor=None):
     """make_cost(Z) for the cpp schedule: the cost function receives candidates
     [prefix (d); free (H)] and returns the anchor-averaged cost of the free part.
     The pre-episode plan (candidates of length H, no prefix, simulator paused)
@@ -50,6 +51,7 @@ def make_cost_hedged(ad, P, dev, amp, d, bank, K, H, gen_seed=5, batch_anchors=F
     steps, not by the number of rows.  Same per-row computation either way."""
     rng = np.random.default_rng(gen_seed)
     bank_t = torch.as_tensor(bank, dtype=torch.float32, device=dev)
+    anchor = anchor or (lambda zh, r: zh + r)          # Section 18: log-space anchors for SimNorm latents
 
     def make_cost(Z):
         Z = np.asarray(Z)
@@ -69,7 +71,7 @@ def make_cost_hedged(ad, P, dev, amp, d, bank, K, H, gen_seed=5, batch_anchors=F
             idx = rng.integers(0, len(bank), (E, max(K - 1, 1)))         # per-episode draws
             J = torch.zeros(E * P, dtype=torch.float64, device=dev)
             if batch_anchors:
-                anc = torch.stack([zh] + [zh + bank_t[idx[:, k - 1]] for k in range(1, K)], 0)   # (K, E, D)
+                anc = torch.stack([zh] + [anchor(zh, bank_t[idx[:, k - 1]]) for k in range(1, K)], 0)   # (K, E, D)
                 Zall = anc.repeat_interleave(P, 1).reshape(K * E * P, -1)
                 Fall = free.unsqueeze(0).expand(K, *free.shape).reshape(K * E * P, *free.shape[1:])
                 Js = []
@@ -79,7 +81,7 @@ def make_cost_hedged(ad, P, dev, amp, d, bank, K, H, gen_seed=5, batch_anchors=F
                                                   dtype=torch.float64, device=dev))
                 return torch.cat(Js).reshape(K, E * P).mean(0)
             for k in range(K):
-                anc = zh if k == 0 else zh + bank_t[idx[:, k - 1]]
+                anc = zh if k == 0 else anchor(zh, bank_t[idx[:, k - 1]])
                 Zr = anc.repeat_interleave(P, 0)
                 with torch.autocast("cuda", dtype=torch.float16) if amp else torch.autocast("cpu", enabled=False):
                     Jk = ad.get_cost(Zr, free)
@@ -87,3 +89,38 @@ def make_cost_hedged(ad, P, dev, amp, d, bank, K, H, gen_seed=5, batch_anchors=F
             return J / K
         return cost
     return make_cost
+
+
+# --- Section 18: residuals in the coordinates of a SimNorm latent (TD-MPC2) ---------------------
+GROUP, EPS = 8, 1e-8
+
+
+def group_log(z):
+    return torch.log(torch.as_tensor(z).clamp_min(EPS))
+
+
+def group_softmax(x):
+    sh = x.shape
+    return torch.softmax(x.reshape(*sh[:-1], -1, GROUP), -1).reshape(sh)
+
+
+def log_anchor(zh, r):
+    """softmax_g(log z_hat + r): an anchor on the simplex of each SimNorm group."""
+    return group_softmax(group_log(zh) + r)
+
+
+def residual_bank_log(ad, task, d, n=512, seed=11):
+    """As residual_bank, with residuals log z(t+d) - log rollout(z(t), a(t:t+d)) per unit."""
+    td = EV.task_data(task)
+    rng = np.random.default_rng(seed + d)
+    e = rng.integers(0, EV.N_TRAIN, n)
+    t = rng.integers(CTX + 8, td.L - d - 2, n)
+    out = []
+    for i in range(0, n, 64):
+        ei, ti = e[i:i + 64], t[i:i + 64]
+        obs = np.stack([td.frames[a, b - CTX:b + d + 1] for a, b in zip(ei, ti)])
+        act = np.stack([td.action[a, b - CTX:b + d] for a, b in zip(ei, ti)])
+        z = np.asarray(ad.encode_sequence(obs, act), np.float64)[:, CTX:]
+        zh = np.asarray(ad.rollout(z[:, 0], act[:, CTX:CTX + d]), np.float64)[:, -1]
+        out.append((group_log(torch.as_tensor(z[:, d])) - group_log(torch.as_tensor(zh))).numpy())
+    return np.concatenate(out)
