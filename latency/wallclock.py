@@ -52,7 +52,8 @@ from latency.hedge import make_cost_hedged, residual_bank  # noqa: E402
 from latency.refine import mppi_run  # noqa: E402
 from paths import RESULTS  # noqa: E402
 
-DT = {"cartpole-swingup": 0.02, "walker-walk": 0.05, "cup-catch": 0.04}   # action repeat 2
+DT = {"cartpole-swingup": 0.02, "walker-walk": 0.05, "cup-catch": 0.04,   # action repeat 2
+      "reacher-easy": 0.04, "cheetah-run": 0.02, "finger-spin": 0.04}
 
 
 def sim_proc(task, seed, T, dt, act_buf, written, executed, start_evt, conn, fake):
