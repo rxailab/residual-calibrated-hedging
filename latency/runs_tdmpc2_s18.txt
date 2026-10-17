@@ -1,0 +1,17 @@
+cartpole-swingup 2 --seed0 950100 --out /mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging/results/latency/tdmpc2_released_s18 --arms paused1,cpp4,cpp8,rchl4k4,rchl8k4,rch4k4,rch8k4
+cartpole-swingup 3 --seed0 950100 --out /mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging/results/latency/tdmpc2_released_s18 --arms paused1,cpp4,cpp8,rchl4k4,rchl8k4,rch4k4,rch8k4
+walker-walk 1 --seed0 950100 --out /mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging/results/latency/tdmpc2_released_s18 --arms paused1,cpp4,cpp8,rchl4k4,rchl8k4,rch4k4,rch8k4
+walker-walk 2 --seed0 950100 --out /mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging/results/latency/tdmpc2_released_s18 --arms paused1,cpp4,cpp8,rchl4k4,rchl8k4,rch4k4,rch8k4
+walker-walk 3 --seed0 950100 --out /mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging/results/latency/tdmpc2_released_s18 --arms paused1,cpp4,cpp8,rchl4k4,rchl8k4,rch4k4,rch8k4
+cup-catch 1 --seed0 950100 --out /mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging/results/latency/tdmpc2_released_s18 --arms paused1,cpp4,cpp8,rchl4k4,rchl8k4,rch4k4,rch8k4
+cup-catch 2 --seed0 950100 --out /mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging/results/latency/tdmpc2_released_s18 --arms paused1,cpp4,cpp8,rchl4k4,rchl8k4,rch4k4,rch8k4
+cup-catch 3 --seed0 950100 --out /mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging/results/latency/tdmpc2_released_s18 --arms paused1,cpp4,cpp8,rchl4k4,rchl8k4,rch4k4,rch8k4
+reacher-easy 1 --seed0 950100 --out /mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging/results/latency/tdmpc2_released_s18 --arms paused1,cpp4,cpp8,rchl4k4,rchl8k4,rch4k4,rch8k4
+reacher-easy 2 --seed0 950100 --out /mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging/results/latency/tdmpc2_released_s18 --arms paused1,cpp4,cpp8,rchl4k4,rchl8k4,rch4k4,rch8k4
+reacher-easy 3 --seed0 950100 --out /mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging/results/latency/tdmpc2_released_s18 --arms paused1,cpp4,cpp8,rchl4k4,rchl8k4,rch4k4,rch8k4
+cheetah-run 1 --seed0 950100 --out /mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging/results/latency/tdmpc2_released_s18 --arms paused1,cpp4,cpp8,rchl4k4,rchl8k4,rch4k4,rch8k4
+cheetah-run 2 --seed0 950100 --out /mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging/results/latency/tdmpc2_released_s18 --arms paused1,cpp4,cpp8,rchl4k4,rchl8k4,rch4k4,rch8k4
+cheetah-run 3 --seed0 950100 --out /mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging/results/latency/tdmpc2_released_s18 --arms paused1,cpp4,cpp8,rchl4k4,rchl8k4,rch4k4,rch8k4
+finger-spin 1 --seed0 950100 --out /mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging/results/latency/tdmpc2_released_s18 --arms paused1,cpp4,cpp8,rchl4k4,rchl8k4,rch4k4,rch8k4
+finger-spin 2 --seed0 950100 --out /mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging/results/latency/tdmpc2_released_s18 --arms paused1,cpp4,cpp8,rchl4k4,rchl8k4,rch4k4,rch8k4
+finger-spin 3 --seed0 950100 --out /mmfs1/storage/users/xiar3/exp/residual-calibrated-hedging/results/latency/tdmpc2_released_s18 --arms paused1,cpp4,cpp8,rchl4k4,rchl8k4,rch4k4,rch8k4

@@ -43,10 +43,24 @@ def parse(arm):
     m = re.fullmatch(r"(naive|cpp)(\d+)", arm)
     if m:
         return m.group(1), int(m.group(2)), 1
-    m = re.fullmatch(r"rch(\d+)k(\d+)", arm)
+    m = re.fullmatch(r"rch(l?)(\d+)k(\d+)", arm)
     if m:
-        return "rch", int(m.group(1)), int(m.group(2))
+        return "rch" + m.group(1), int(m.group(2)), int(m.group(3))
     raise ValueError(arm)
+
+
+GROUP = 8                                    # SimNorm group size (common/layers.py, simnorm_dim)
+EPS = 1e-8
+
+
+def group_log(z):
+    return torch.log(z.clamp_min(EPS))
+
+
+def group_softmax(x):
+    """SimNorm: softmax over consecutive groups of GROUP units."""
+    sh = x.shape
+    return torch.softmax(x.view(*sh[:-1], -1, GROUP), -1).view(sh)
 
 
 @torch.no_grad()
@@ -101,8 +115,9 @@ def plan(ag, anchors, prev_mean, gen):
 
 
 @torch.no_grad()
-def residual_bank(ag, task, d, n=512, seed=11):
-    """(n, L) residuals enc(o_{t+d}) - rollout(enc(o_t), a_{t:t+d}) on D_train windows (proprio)."""
+def residual_bank(ag, task, d, n=512, seed=11, log_space=False):
+    """(n, L) residuals enc(o_{t+d}) - rollout(enc(o_t), a_{t:t+d}) on D_train windows (proprio);
+    with log_space (Section 18), log enc(o_{t+d}) - log rollout(...), per SimNorm unit."""
     td = EV.task_data(task)
     rng = np.random.default_rng(seed + d)
     e = rng.integers(0, EV.N_TRAIN, n)
@@ -111,6 +126,8 @@ def residual_bank(ag, task, d, n=512, seed=11):
     obs1 = np.stack([td.proprio[a, b + d] for a, b in zip(e, t)])
     act = torch.as_tensor(np.stack([td.action[a, b:b + d] for a, b in zip(e, t)]), dtype=torch.float32, device=ag.device)
     zh = rollout(ag, ag._encode(obs0), act)
+    if log_space:
+        return (group_log(ag._encode(obs1)) - group_log(zh)).cpu().numpy()
     return (ag._encode(obs1) - zh).cpu().numpy()
 
 
@@ -137,11 +154,14 @@ def run_arm(ag, task, arm, episodes, seed0, gen_seed=777, bank=None):
     while alive.any():
         tp = time.perf_counter()
         z = ag._encode(obs)
-        if kind in ("cpp", "rch"):
+        if kind in ("cpp", "rch", "rchl"):
             z = rollout(ag, z, pending)
         if kind == "rch" and K > 1:
             idx = torch.as_tensor(rng.integers(0, len(bank_t), (episodes, K - 1)), device=ag.device)
             anchors = torch.cat([z[:, None], z[:, None] + bank_t[idx]], 1)
+        elif kind == "rchl" and K > 1:                     # anchors on the simplex (Section 18)
+            idx = torch.as_tensor(rng.integers(0, len(bank_t), (episodes, K - 1)), device=ag.device)
+            anchors = torch.cat([z[:, None], group_softmax(group_log(z)[:, None] + bank_t[idx])], 1)
         else:
             anchors = z[:, None]
         a_new, prev = plan(ag, anchors, prev, gen)
@@ -187,9 +207,11 @@ def main():
             print("skip (done)", f, flush=True); continue
         kind, d, K = parse(arm)
         bank = None
-        if kind == "rch":
-            banks.setdefault(d, residual_bank(ag, a.task, d))
-            bank = banks[d]
+        if kind in ("rch", "rchl"):
+            key = (d, kind)
+            if key not in banks:
+                banks[key] = residual_bank(ag, a.task, d, log_space=(kind == "rchl"))
+            bank = banks[key]
         r = run_arm(ag, a.task, arm, a.episodes, a.seed0, bank=bank)
         r.update(task=a.task, seed=a.seed, ckpt=str(checkpoint_path(a.task, a.seed)), plan_cfg=ag.cfg,
                  gpu=torch.cuda.get_device_name(0), host=os.uname().nodename, job=os.environ.get("SLURM_JOB_ID"),
