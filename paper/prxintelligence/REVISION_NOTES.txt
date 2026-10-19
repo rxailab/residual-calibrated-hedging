@@ -41,3 +41,10 @@ Practical limits
 - Compute figures remain transparently qualified; cluster accounting was not
   available to produce an audited end-to-end total.
 - These edits address the documented readiness issues, not acceptance odds.
+
+Author-confirmed access update (19 October 2026)
+The datasets, checkpoints and diffusion reward heads maintained outside the
+public code release are available from the corresponding authors upon
+reasonable request, including for editorial and peer review. This commitment
+is now stated in the manuscript and repository README. The availability
+statements also explicitly cite the public repository release.

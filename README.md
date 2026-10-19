@@ -72,6 +72,8 @@ It needs inputs from the MetricTrust pipeline that are **not in this repo**:
 - **Trained world models:** the final checkpoints in `/mmfs1/storage/users/xiar3/exp/MetricTrust/checkpoints_keep`, which the Slurm scripts find through `CKPT_KEEP`.
 - **Diffusion model only:** MiniWorld (github.com/Zhao-Yian/MiniWorld at `e484206`), placed in `third_party/MiniWorld`.
 
+The training datasets, checkpoint files and diffusion reward heads maintained outside this repository are available from the corresponding authors upon reasonable request, including for editorial and peer review. Contact r.xia2@lancaster.ac.uk or r.jiang2@lancaster.ac.uk.
+
 The scripts write results inside this repo; override the root with `RCH_ROOT`.
 
 ```bash
