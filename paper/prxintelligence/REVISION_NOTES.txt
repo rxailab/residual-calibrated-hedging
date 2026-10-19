@@ -1,0 +1,43 @@
+Submission-readiness revision, 19 October 2026
+Base: 6870f8d3297391840a12ae064f932603673d3661
+
+Changes
+- Removed the supplement's pending compute placeholder and synchronized all
+  current studies, amendments, follow-ups and outcomes with the main paper.
+- Both documents now input study-design.tex and compute-summary.tex, avoiding
+  inconsistent duplicate descriptions. Keep both shared files in source uploads.
+- Matched the supplement's author names and affiliation to the main paper.
+- Replaced the private MetricTrust reference with the public release snapshot.
+  Data availability now identifies the datasets, checkpoints and reward heads
+  missing from the public release, with a corresponding-author contact route.
+- Corrected the Thodoroff benchmarking-proposal attribution and workshop venue.
+  Added the CLIS-MPPI arXiv record, Particle MPC DOI and RTC page range/DOI.
+- Restricted the exact VSS/EVPI identity to its conditional one-call model-cost
+  problem and ideal optimization assumptions; removed claims of an exact split
+  or certified bounds for measured closed-loop normalized return.
+- Corrected mean correction's second-order contribution: the mean-shift
+  quadratic term is retained, while the covariance contribution is omitted.
+- Made pilot overlap explicit in the abstract and Discussion. Identified the
+  real-time sample as selected for prior fixed-delay benefit, and described the
+  incremental real-time HTR-vs-RCH estimate as inconclusive.
+- Repaired compute prose. Distinguished rounded estimates, recorded study
+  totals and the planned 21-job real-time allocation; no invented aggregate.
+- Removed the source-only DRAFT reminder. Following author confirmation,
+  Claude's disclosed role is writing experiment code. Codex's disclosed role
+  includes reference checks, manuscript revision and PDF inspection.
+- Standardized American English in edited manuscript prose.
+
+Validation
+- Both documents compile with Tectonic/REVTeX 4.2 and were visually inspected.
+- All 71 cited entries exist and their titles appear in the main PDF.
+- All 59 unique cross-reference labels resolve; no unresolved markers,
+  unfinished placeholders, missing glyphs or overfull boxes were found.
+- The APS-prescribed supplemental URL placeholder is retained intentionally.
+- No experimental results, study plans or experiment code were changed.
+
+Practical limits
+- The public repository is not a complete reproduction package: underlying
+  training datasets, checkpoints and reward heads remain unreleased.
+- Compute figures remain transparently qualified; cluster accounting was not
+  available to produce an audited end-to-end total.
+- These edits address the documented readiness issues, not acceptance odds.

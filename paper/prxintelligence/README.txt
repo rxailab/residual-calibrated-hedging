@@ -1,9 +1,10 @@
-PRX Intelligence manuscript (16 October 2026)
+PRX Intelligence manuscript (19 October 2026)
 
 main.tex is the latest manuscript converted to the APS REVTeX 4.2 Physical
 Review style recommended by PRX Intelligence. main-review.tex selects a
 single-column referee version. supplementary.tex is the separate Supplemental
-Material. Built PDFs are in build/. Shared figures remain in ../figures/.
+Material. Shared study-design.tex and compute-summary.tex must remain beside
+these sources. Built PDFs are in build/. Shared figures remain in ../figures/.
 
 From paper/prxintelligence/, build with Tectonic:
   tectonic --outdir build main.tex
@@ -31,6 +32,8 @@ https://journals.aps.org/prxintelligence/authors
 https://journals.aps.org/revtex
 
 Author review before submission:
-- The original supplement's [PENDING: per study] compute total remains.
-- The supplement retains its original sole author, R. Xia; confirm its byline.
-- Review the existing LLM-use disclosure for completeness.
+- LLM-use disclosure corrected following author confirmation on 19 October 2026.
+- The supplement now matches the main paper's author list and current studies.
+- Compute figures are qualified estimates, recorded figures or planned allocations;
+  no audited aggregate is claimed.
+- The README and Data availability statement identify unreleased inputs.

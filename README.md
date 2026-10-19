@@ -4,7 +4,7 @@ This is the paper, code and results of the side paper. It was split out of the p
 
 **The method.** A planner that uses a learned world model takes time to compute, and a deployed system keeps moving while it does. Committed-prefix planning rolls the model through the actions already committed and plans from the predicted post-delay state. With learned pixel world models this leaves most of the delay loss, because the models' errors through the delay are value-aligned.
 
-Residual-calibrated hedging (RCH) scores each candidate over several post-delay states: the prediction plus the model's own recorded d-step errors. These states are scored in one batched call, which adds no latency at batch size 1. Optionally, a small learned heteroscedastic error model replaces the recorded errors.
+Residual-calibrated hedging (RCH) scores each candidate over several post-delay states: the prediction plus the model's own recorded d-step errors. These states are scored in one batched call, which added 1--2% latency for the compact models tested at batch size 1; heavier public models incurred larger overheads. Optionally, a small learned heteroscedastic error model replaces the recorded errors.
 
 **Latest paper:** [PRX Intelligence manuscript (PDF)](paper/prxintelligence/build/main.pdf) and [Supplemental Material (PDF)](paper/prxintelligence/build/supplementary.pdf), prepared with APS REVTeX 4.2. [LaTeX sources and build instructions](paper/prxintelligence/).
 
@@ -12,7 +12,7 @@ Residual-calibrated hedging (RCH) scores each candidate over several post-delay 
 
 | Path | Contents |
 |---|---|
-| `paper/prxintelligence/` | Latest manuscript: `main.tex`, `main-review.tex`, `refs.bib` and `supplementary.tex` (APS REVTeX 4.2), with built PDFs in `build/` |
+| `paper/prxintelligence/` | Latest manuscript: `main.tex`, `main-review.tex`, `refs.bib`, `supplementary.tex` and shared study/compute notes (APS REVTeX 4.2), with built PDFs in `build/` |
 | `paper/ncomms/` | Previous Nature-format manuscript: `main.tex`, `refs.bib` and `supplementary.tex` (Springer Nature template v3.1, `sn-nature`), with built PDFs in `build/` |
 | `paper/figures/`, `paper/scripts/` | Figures 1-3 (SVG, PDF and PNG) and the scripts that generate them from data (`figstyle.py` plus one script per figure) |
 | `paper/fonts/` | Albert Sans (SIL OFL, `OFL.txt`) and `fonts.conf` for the figure renderer |
@@ -86,4 +86,4 @@ The first command is the CPU exactness check. The second runs Study 1 (delay swe
 
 ## Status
 
-The latest manuscript is in PRX Intelligence format (16 October 2026), including the comparison with DATS-style ensemble hedging (11 October 2026; `latency/ensemble.py`, `results/latency/ensemble.json`). Still to fill in: archive and code DOIs, and the supplement's existing per-study compute-total placeholder.
+The PRX Intelligence manuscript and supplement were synchronized on 19 October 2026. Shared `study-design.tex` and `compute-summary.tex` keep the decision-rule and compute descriptions consistent. The compute note distinguishes reported estimates, recorded figures and planned allocations; it does not claim an audited aggregate total. The bibliography cites this public release rather than requiring access to the private MetricTrust repository. Training datasets, checkpoints and diffusion reward heads remain outside the release, as documented above; the public repository is not a complete reproduction package. Archive/code DOIs have not been assigned. The LLM-use disclosure was corrected following author confirmation: Claude was used to write experiment code, and Codex assisted with the reference audit and manuscript revision.
